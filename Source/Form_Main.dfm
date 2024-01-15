@@ -1,8 +1,8 @@
 object FormMain: TFormMain
   Left = 0
   Top = 0
-  Caption = 'JAT Audio Streaming'
-  ClientHeight = 460
+  Caption = 'JAT Audio Streaming Client'
+  ClientHeight = 462
   ClientWidth = 800
   Color = clBtnFace
   Constraints.MinHeight = 500
@@ -21,11 +21,13 @@ object FormMain: TFormMain
     Left = 0
     Top = 0
     Width = 800
-    Height = 460
+    Height = 462
     Align = alClient
     DoubleBuffered = True
     ParentDoubleBuffered = False
     TabOrder = 0
+    ExplicitWidth = 796
+    ExplicitHeight = 461
   end
   object MainMenu1: TMainMenu
     Left = 24
