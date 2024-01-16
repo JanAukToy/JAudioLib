@@ -7,10 +7,15 @@ uses
 
 const
   IID_IAudioClient: TGUID = '{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}';
+  IID_IAudioRenderClient: TGUID = '{F294ACFC-3146-4483-A7BF-ADDCA7C260E2}';
+  IID_IAudioCaptureClient: TGUID = '{C8ADBD64-E71E-48a0-A4DE-185C395CD317}';
 
 type
   _AUDCLNT_SHAREMODE = (AUDCLNT_SHAREMODE_SHARED, AUDCLNT_SHAREMODE_EXCLUSIVE);
   AUDCLNT_SHAREMODE = _AUDCLNT_SHAREMODE;
+
+  _AUDCLNT_BUFFERFLAGS = (AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY = $1, AUDCLNT_BUFFERFLAGS_SILENT = $2,
+    AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR = $4);
 
   REFERENCE_TIME = Int64;
 
@@ -55,6 +60,20 @@ type
     function Reset(): HRESULT; stdcall;
     function SetEventHandle(eventHandle: THandle): HRESULT; stdcall;
     function GetService(const riid: TGUID; out ppv: Pointer): HRESULT; stdcall;
+  end;
+
+  IAudioRenderClient = interface(IUnknown)
+    ['{F294ACFC-3146-4483-A7BF-ADDCA7C260E2}']
+    function GetBuffer(NumFramesRequested: UINT32; out ppData: PBYTE): HRESULT; stdcall;
+    function ReleaseBuffer(NumFramesWritten: UINT32; dwFlags: DWORD): HRESULT; stdcall;
+  end;
+
+  IAudioCaptureClient = interface(IUnknown)
+    ['{C8ADBD64-E71E-48a0-A4DE-185C395CD317}']
+    function GetBuffer(out ppData: PBYTE; out pNumFramesToRead: UINT32; out pdwFlags: DWORD;
+      out pu64DevicePosition: UINT64; out pu64QPCPosition: UINT64): HRESULT; stdcall;
+    function ReleaseBuffer(NumFramesRead: UINT32): HRESULT; stdcall;
+    function GetNextPacketSize(out pNumFramesInNextPacket: UINT32): HRESULT; stdcall;
   end;
 
 implementation

@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, Vcl.Forms, Vcl.ComCtrls, Vcl.Controls,
   Vcl.ToolWin, Vcl.Menus, System.Generics.Collections, Vcl.StdCtrls,
 
-  cls_AudioDeviceManager;
+  cls_AudioStreamDeviceManager, cls_AudioStreamClientThread;
 
 type
   TFormMain = class(TForm)
@@ -16,7 +16,8 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     { Private êÈåæ }
-    f_AudioDeviceManager: TAudioDeviceManager;
+    f_AudioStreamDeviceManager: TAudioStreamDeviceManager;
+    f_AudioStreamClientThread: TAudioStreamClientThread;
 
     procedure InitVar;
   public
@@ -28,9 +29,6 @@ var
 
 implementation
 
-uses
-  cls_AudioDevice;
-
 {$R *.dfm}
 
 procedure TFormMain.FormCreate(Sender: TObject);
@@ -40,13 +38,25 @@ end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  FreeAndNil(f_AudioDeviceManager);
+  if Assigned(f_AudioStreamDeviceManager) then
+  begin
+    FreeAndNil(f_AudioStreamDeviceManager);
+  end;
+
+  if Assigned(f_AudioStreamClientThread) then
+  begin
+    FreeAndNil(f_AudioStreamClientThread);
+  end;
 end;
 
 procedure TFormMain.InitVar;
 begin
-  // Create Device LIst
-  f_AudioDeviceManager := TAudioDeviceManager.Create;
+  f_AudioStreamDeviceManager := TAudioStreamDeviceManager.Create;
+
+  if f_AudioStreamDeviceManager.CaptureDevice.Ready then
+  begin
+    f_AudioStreamClientThread.Create(f_AudioStreamDeviceManager.CaptureDevice.Device);
+  end;
 end;
 
 end.

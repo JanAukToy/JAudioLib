@@ -1,4 +1,4 @@
-unit cls_AudioDeviceManager;
+unit cls_AudioStreamDeviceManager;
 
 interface
 
@@ -6,17 +6,17 @@ uses
   System.SysUtils, System.Classes, System.Win.ComObj, System.SyncObjs,
   System.Generics.Collections, Winapi.Windows, Winapi.ActiveX,
 
-  JAT.MMDeviceAPI, cls_AudioDevice, cls_NotificationClient;
+  JAT.MMDeviceAPI, cls_AudioStreamDevice, cls_NotificationClient;
 
 type
-  TAudioDeviceManager = class
+  TAudioStreamDeviceManager = class
   private
-    // Audio Device...
+    // For Audio Streaming Device...
     f_DeviceEnumerator: IMMDeviceEnumerator;
-    f_CaptureDevice: TAudioDevice;
-    f_RenderDevice: TAudioDevice;
+    f_CaptureDevice: TAudioStreamDevice;
+    f_RenderDevice: TAudioStreamDevice;
 
-    // Device Notification...
+    // For Device Notification...
     f_NotificationClient: TNotificationClient;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
   public
@@ -24,16 +24,16 @@ type
     destructor Destroy; override;
     procedure Reload;
 
-    property CaptureDevice: TAudioDevice read f_CaptureDevice;
-    property RenderDevice: TAudioDevice read f_RenderDevice;
+    property CaptureDevice: TAudioStreamDevice read f_CaptureDevice;
+    property RenderDevice: TAudioStreamDevice read f_RenderDevice;
     property OnDefaultDeviceChanged: TOnDefaultDeviceChanged write f_OnDefaultDeviceChanged;
   end;
 
 implementation
 
-{ TAudioDevices }
+{ TAudioStreamDeviceManager }
 
-constructor TAudioDeviceManager.Create;
+constructor TAudioStreamDeviceManager.Create;
 begin
   // Init COM
   if (Succeeded(CoInitializeEx(nil, COINIT_APARTMENTTHREADED))) and
@@ -52,7 +52,7 @@ begin
   end;
 end;
 
-destructor TAudioDeviceManager.Destroy;
+destructor TAudioStreamDeviceManager.Destroy;
 begin
   if Assigned(f_NotificationClient) then
   begin
@@ -65,12 +65,22 @@ begin
     FreeAndNil(f_NotificationClient);
   end;
 
+  if Assigned(f_CaptureDevice) then
+  begin
+    FreeAndNil(f_CaptureDevice);
+  end;
+
+  if Assigned(f_RenderDevice) then
+  begin
+    FreeAndNil(f_RenderDevice);
+  end;
+
   CoUninitialize();
 
   inherited;
 end;
 
-procedure TAudioDeviceManager.Reload;
+procedure TAudioStreamDeviceManager.Reload;
 begin
   if Assigned(f_DeviceEnumerator) then
   begin
@@ -86,8 +96,8 @@ begin
     end;
 
     // Get Devices
-    f_CaptureDevice := TAudioDevice.Create(f_DeviceEnumerator, eCapture);
-    f_RenderDevice := TAudioDevice.Create(f_DeviceEnumerator, eRender);
+    f_CaptureDevice := TAudioStreamDevice.Create(f_DeviceEnumerator, eCapture);
+    f_RenderDevice := TAudioStreamDevice.Create(f_DeviceEnumerator, eRender);
   end;
 end;
 
