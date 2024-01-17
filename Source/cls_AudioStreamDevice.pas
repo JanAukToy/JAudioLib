@@ -122,7 +122,7 @@ begin
   f_Ready := False;
 
   // Get Device
-  if Succeeded(a_Enumerator.GetDefaultAudioEndpoint(a_DataFlowType, eConsole, f_Device)) then
+  if Succeeded(a_Enumerator.GetDefaultAudioEndpoint(eCapture, eConsole, f_Device)) then
   begin
     // Get Device ID
     if Succeeded(f_Device.GetId(l_Id)) then
@@ -137,8 +137,7 @@ begin
         if GetDeviceProps(f_PropertyStore) then
         begin
           // Get Audio Endpoint Volume Pointer Interface
-          if Succeeded(f_Device.Activate(IID_IAudioEndpointVolume, CLSCTX_INPROC_SERVER, nil,
-            l_PointAudioEndpointVolume)) then
+          if Succeeded(f_Device.Activate(IID_IAudioEndpointVolume, CLSCTX_ALL, nil, l_PointAudioEndpointVolume)) then
           begin
             // Cast to Audio Endpoint Volume
             f_AudioEndpointVolume := IAudioEndpointVolume(l_PointAudioEndpointVolume) as IAudioEndpointVolume;

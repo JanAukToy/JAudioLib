@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, Vcl.Forms, Vcl.ComCtrls, Vcl.Controls,
   Vcl.ToolWin, Vcl.Menus, System.Generics.Collections, Vcl.StdCtrls,
 
-  cls_AudioStreamDeviceManager, cls_AudioStreamClientThread;
+  cls_AudioStreamClientThread;
 
 type
   TFormMain = class(TForm)
@@ -16,7 +16,6 @@ type
     procedure FormDestroy(Sender: TObject);
   private
     { Private êÈåæ }
-    f_AudioStreamDeviceManager: TAudioStreamDeviceManager;
     f_AudioStreamClientThread: TAudioStreamClientThread;
 
     procedure InitVar;
@@ -38,11 +37,6 @@ end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  if Assigned(f_AudioStreamDeviceManager) then
-  begin
-    FreeAndNil(f_AudioStreamDeviceManager);
-  end;
-
   if Assigned(f_AudioStreamClientThread) then
   begin
     FreeAndNil(f_AudioStreamClientThread);
@@ -51,12 +45,7 @@ end;
 
 procedure TFormMain.InitVar;
 begin
-  f_AudioStreamDeviceManager := TAudioStreamDeviceManager.Create;
-
-  if f_AudioStreamDeviceManager.CaptureDevice.Ready then
-  begin
-    f_AudioStreamClientThread.Create(f_AudioStreamDeviceManager.CaptureDevice.Device);
-  end;
+  f_AudioStreamClientThread := TAudioStreamClientThread.Create;
 end;
 
 end.

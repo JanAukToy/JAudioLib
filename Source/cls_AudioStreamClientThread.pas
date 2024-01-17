@@ -7,22 +7,20 @@ uses
   System.StrUtils, Winapi.Windows, Winapi.ActiveX, Winapi.MMSystem,
   Vcl.Forms,
 
-  JAT.MMDeviceAPI, JAT.AudioClient;
+  JAT.MMDeviceAPI, JAT.AudioClient, cls_AudioStreamDeviceManager;
 
 type
   TAudioStreamClientThread = class(TThread)
   private
-    f_Started: Boolean;
-    f_Device: IMMDevice;
-
+    f_AudioStreamDeviceManager: TAudioStreamDeviceManager;
     f_AudioClient: IAudioClient;
-    f_WaveFormat: WAVEFORMATEX;
+    f_pWaveFormat: PWAVEFORMATEX;
     f_AudioCaptureClient: IAudioCaptureClient;
     f_ActualDuration: REFERENCE_TIME;
 
     function StartCapture: Boolean;
   public
-    constructor Create(const a_Device: IMMDevice);
+    constructor Create;
     destructor Destroy; override;
   protected
     procedure Execute; override;
@@ -37,75 +35,70 @@ implementation
 
 { TAudioStreamClientThread }
 
-constructor TAudioStreamClientThread.Create(const a_Device: IMMDevice);
+constructor TAudioStreamClientThread.Create;
 begin
-  f_Device := a_Device;
-
-  f_Started := StartCapture;
-
   FreeOnTerminate := False;
   inherited Create(False);
 end;
 
 destructor TAudioStreamClientThread.Destroy;
 begin
-  if f_Started then
+  if Assigned(f_AudioStreamDeviceManager) then
   begin
-    f_AudioClient.Stop;
+    FreeAndNil(f_AudioStreamDeviceManager);
   end;
 
   inherited;
 end;
 
 function TAudioStreamClientThread.StartCapture: Boolean;
-const
-  WAVE_FORMAT_IEEE_FLOAT = $0003;
 var
   l_PointAudioClient: Pointer;
   l_BufferFrameCount: Cardinal;
   l_PointAudioCaptureClient: Pointer;
-  l_pCloseWaveFormat: WAVEFORMATEX;
+  l_pCloseWaveFormat: PWAVEFORMATEX;
 begin
   Result := False;
 
   // Get Audio Client
-  if Succeeded(f_Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, l_PointAudioClient)) then
+  if Succeeded(f_AudioStreamDeviceManager.CaptureDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil,
+    l_PointAudioClient)) then
   begin
     f_AudioClient := IAudioClient(l_PointAudioClient) as IAudioClient;
 
-    // Create Wave Format
-    f_WaveFormat.wFormatTag := WAVE_FORMAT_IEEE_FLOAT;
-    f_WaveFormat.nChannels := 2;
-    f_WaveFormat.nSamplesPerSec := 48000;
-    f_WaveFormat.wBitsPerSample := 32;
-    f_WaveFormat.cbSize := 0;
-    f_WaveFormat.nBlockAlign := Round(f_WaveFormat.nChannels * f_WaveFormat.wBitsPerSample / 8);
-    f_WaveFormat.nAvgBytesPerSec := f_WaveFormat.nSamplesPerSec * f_WaveFormat.nBlockAlign;
-
-    // Check Support Format
-    if Succeeded(f_AudioClient.IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, f_WaveFormat, l_pCloseWaveFormat)) then
+    // Get Base Format
+    if Succeeded(f_AudioClient.GetMixFormat(f_pWaveFormat)) then
     begin
-      // Init AudioClient
-      if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, 0, REFTIMES_PER_SEC, 0, f_WaveFormat, TGUID.Empty))
-      then
+      // Fix Format
+      f_pWaveFormat.wFormatTag := WAVE_FORMAT_PCM;
+      f_pWaveFormat.cbSize := 0;
+
+      // Check Support Format
+      if Succeeded(f_AudioClient.IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, f_pWaveFormat, l_pCloseWaveFormat)) then
       begin
-        // Get Buffer Size
-        if Succeeded(f_AudioClient.GetBufferSize(l_BufferFrameCount)) then
+        // Init AudioClient
+        if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, 0, REFTIMES_PER_SEC, 0, f_pWaveFormat,
+          TGuid.Empty)) then
         begin
-          // Get Audio Capture Client
-          if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, l_PointAudioCaptureClient)) then
+          // Get Buffer Size
+          if Succeeded(f_AudioClient.GetBufferSize(l_BufferFrameCount)) then
           begin
-            f_AudioCaptureClient := IAudioCaptureClient(l_PointAudioCaptureClient) as IAudioCaptureClient;
+            // Get Audio Capture Client
+            if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, l_PointAudioCaptureClient)) then
+            begin
+              f_AudioCaptureClient := IAudioCaptureClient(l_PointAudioCaptureClient) as IAudioCaptureClient;
 
-            // Get Duration
-            f_ActualDuration := Round(REFTIMES_PER_SEC * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec);
+              // Get Duration
+              f_ActualDuration := Round(REFTIMES_PER_SEC * l_BufferFrameCount / f_pWaveFormat.nSamplesPerSec);
 
-            // Start Capture
-            Result := Succeeded(f_AudioClient.Start);
+              // Start Capture
+              Result := Succeeded(f_AudioClient.Start);
+            end;
           end;
         end;
       end;
     end;
+
   end;
 end;
 
@@ -125,15 +118,13 @@ var
   l_DevicePosition: UInt64;
   l_QPCPosition: UInt64;
 begin
-  // Init COM
-  if (not f_Started) or (not Succeeded(CoInitializeEx(nil, COINIT_MULTITHREADED))) then
+  // Create Audio Stream Device Manager
+  f_AudioStreamDeviceManager := TAudioStreamDeviceManager.Create(COINIT_MULTITHREADED);
+
+  // Check Ready Device and Start Capture
+  if (f_AudioStreamDeviceManager.CaptureDevice.Ready) and (StartCapture) then
   begin
-    Exit;
-  end;
-
-  try
     l_FileStream := TFileStream.Create(ExtractFileDir(Application.ExeName) + '\capturesample.wav', fmCreate);
-
     l_BinaryWriter := TBinaryWriter.Create(l_FileStream);
 
     try
@@ -141,14 +132,14 @@ begin
       l_BinaryWriter.Write(UInt32(0));
       l_BinaryWriter.Write('WAVE'.ToCharArray);
       l_BinaryWriter.Write('fmt '.ToCharArray);
-      l_BinaryWriter.Write(UInt32(18 + f_WaveFormat.cbSize));
-      l_BinaryWriter.Write(f_WaveFormat.wFormatTag);
-      l_BinaryWriter.Write(f_WaveFormat.nChannels);
-      l_BinaryWriter.Write(f_WaveFormat.nSamplesPerSec);
-      l_BinaryWriter.Write(f_WaveFormat.nAvgBytesPerSec);
-      l_BinaryWriter.Write(f_WaveFormat.nBlockAlign);
-      l_BinaryWriter.Write(f_WaveFormat.wBitsPerSample);
-      l_BinaryWriter.Write(f_WaveFormat.cbSize);
+      l_BinaryWriter.Write(UInt32(18 + f_pWaveFormat.cbSize));
+      l_BinaryWriter.Write(f_pWaveFormat.wFormatTag);
+      l_BinaryWriter.Write(f_pWaveFormat.nChannels);
+      l_BinaryWriter.Write(f_pWaveFormat.nSamplesPerSec);
+      l_BinaryWriter.Write(f_pWaveFormat.nAvgBytesPerSec);
+      l_BinaryWriter.Write(f_pWaveFormat.nBlockAlign);
+      l_BinaryWriter.Write(f_pWaveFormat.wBitsPerSample);
+      l_BinaryWriter.Write(f_pWaveFormat.cbSize);
       l_BinaryWriter.Write('data'.ToCharArray);
       l_DataSizePosition := l_FileStream.Position;
       l_BinaryWriter.Write(UInt32(0));
@@ -180,7 +171,7 @@ begin
 
               if (l_pBuffer <> nil) and (l_NumFramesAvailable > 0) then
               begin
-                l_IncomingBufferSize := f_WaveFormat.nBlockAlign * l_NumFramesAvailable;
+                l_IncomingBufferSize := f_pWaveFormat.nBlockAlign * l_NumFramesAvailable;
 
                 // Copy Buffer
                 SetLength(l_Bytes, l_IncomingBufferSize);
@@ -203,14 +194,13 @@ begin
       end;
 
       // Stop Capture
-      if f_AudioClient.Stop = S_OK then
-      begin
-        f_Started := False;
-      end;
+      f_AudioClient.Stop;
 
+      // Write Chunk
       l_BinaryWriter.Seek(4, TSeekOrigin.soBeginning);
       l_BinaryWriter.Write(UInt32(l_BinaryWriter.BaseStream.Size - 8));
 
+      // Write Chunk Size
       l_BinaryWriter.Seek(l_DataSizePosition, TSeekOrigin.soBeginning);
       l_BinaryWriter.Write(l_ChunkSize);
 
@@ -218,9 +208,6 @@ begin
       l_BinaryWriter.Free;
       l_FileStream.Free;
     end;
-
-  finally
-    CoUninitialize();
   end;
 end;
 

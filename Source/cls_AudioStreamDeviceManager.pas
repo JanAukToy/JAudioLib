@@ -20,7 +20,7 @@ type
     f_NotificationClient: TNotificationClient;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
   public
-    constructor Create;
+    constructor Create(const a_CoInitFlag: Longint);
     destructor Destroy; override;
     procedure Reload;
 
@@ -33,10 +33,10 @@ implementation
 
 { TAudioStreamDeviceManager }
 
-constructor TAudioStreamDeviceManager.Create;
+constructor TAudioStreamDeviceManager.Create(const a_CoInitFlag: Longint);
 begin
   // Init COM
-  if (Succeeded(CoInitializeEx(nil, COINIT_APARTMENTTHREADED))) and
+  if (Succeeded(CoInitializeEx(nil, a_CoInitFlag))) and
   // Get DeviceEnumerator
     (Succeeded(CoCreateInstance(CLSID_IMMDeviceEnumerator, nil, CLSCTX_ALL, IID_IMMDeviceEnumerator,
     f_DeviceEnumerator))) then

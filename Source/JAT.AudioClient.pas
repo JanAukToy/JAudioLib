@@ -46,13 +46,13 @@ type
   IAudioClient = interface(IUnknown)
     ['{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}']
     function Initialize(ShareMode: _AUDCLNT_SHAREMODE; StreamFlags: DWORD; hnsBufferDuration: REFERENCE_TIME;
-      hnsPeriodicity: REFERENCE_TIME; const pFormat: WAVEFORMATEX; AudioSessionGuid: TGUID): HRESULT; stdcall;
+      hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEX; AudioSessionGuid: TGUID): HRESULT; stdcall;
     function GetBufferSize(out pNumBufferFrames: UINT32): HRESULT; stdcall;
     function GetStreamLatency(out phnsLatency: REFERENCE_TIME): HRESULT; stdcall;
     function GetCurrentPadding(out pNumPaddingFrames: UINT32): HRESULT; stdcall;
-    function IsFormatSupported(ShareMode: AUDCLNT_SHAREMODE; const pFormat: WAVEFORMATEX;
-      out ppClosestMatch: WAVEFORMATEX): HRESULT; stdcall;
-    function GetMixFormat(out ppDeviceFormat: WAVEFORMATEX): HRESULT; stdcall;
+    function IsFormatSupported(ShareMode: AUDCLNT_SHAREMODE; const pFormat: PWAVEFORMATEX;
+      out ppClosestMatch: PWAVEFORMATEX): HRESULT; stdcall;
+    function GetMixFormat(out ppDeviceFormat: PWAVEFORMATEX): HRESULT; stdcall;
     function GetDevicePeriod(out phnsDefaultDevicePeriod: REFERENCE_TIME; out phnsMinimumDevicePeriod: REFERENCE_TIME)
       : HRESULT; stdcall;
     function Start(): HRESULT; stdcall;
