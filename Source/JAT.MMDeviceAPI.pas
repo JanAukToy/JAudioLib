@@ -41,8 +41,8 @@ const
     D4: ($B3, $AB, $AE, $9E, $1F, $AE, $FC, $6C)); pid: 2);
 
 type
-  EDataFlow = (eRender, eCapture, eAll, EDataFlow_enum_count);
-  ERole = (eConsole, eMultimedia, eCommunications, ERole_enum_count);
+  EDataFlow = (eRender = $00000000, eCapture = $00000001, eAll = $00000002, EDataFlow_enum_count = $00000003);
+  ERole = (eConsole = $00000000, eMultimedia = $00000001, eCommunications = $00000002, ERole_enum_count = $00000003);
 
   PPROPVARIANT = ^PROPVARIANT;
   PIMMDevice = ^IMMDevice;

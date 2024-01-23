@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, System.Generics.Collections,
   Winapi.Windows, Winapi.ActiveX, Winapi.PropSys,
 
-  JAT.MMDeviceAPI, JAT.EndpointVolume;
+  JAT.MMDeviceAPI, JAT.EndpointVolume, cls_NotificationClient;
 
 type
   // ***************************************************************************
@@ -33,6 +33,11 @@ type
     f_VolumeCallbackHandler: TAudioEndpointVolumeCallbackHandler;
     f_PropertyStore: IPropertyStore;
 
+    // Device Emurator...
+    f_DeviceEnumerator: IMMDeviceEnumerator;
+    f_NotificationClient: TNotificationClient;
+    f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
+
     // Device Props...
     f_Device: IMMDevice;
     f_AudioEndpointVolume: IAudioEndpointVolume;
@@ -55,6 +60,9 @@ type
     f_OnChangeMasterLevel: TOnChangeMasterLevel;
     f_OnChangeMute: TOnChangeMute;
 
+    function InitEmurator(const a_CoInitFlag: Integer): Boolean;
+    function InitDevice(const a_DataFlowType: EDataFlow): Boolean;
+
     procedure SetDeviceDesc(const a_Value: string);
     procedure SetMasterLevel(const a_Value: Single);
     procedure SetMute(const a_Value: Boolean);
@@ -63,14 +71,13 @@ type
     function GetAudioEndpointVolumeProps(): Boolean;
     procedure OnControlChangeNotify(const a_Data: AUDIO_VOLUME_NOTIFICATION_DATA);
   public
-    constructor Create(const a_Enumerator: IMMDeviceEnumerator; const a_DataFlowType: EDataFlow);
+    constructor Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
     destructor Destroy; override;
 
     property Ready: Boolean read f_Ready;
 
     property Device: IMMDevice read f_Device;
 
-    property InterfaceFriendlyName: string read f_InterfaceFriendlyName;
     property DeviceDesc: string read f_DeviceDesc write SetDeviceDesc;
     property FriendlyName: string read f_FriendlyName;
     property InstanceId: string read f_InstanceId;
@@ -114,15 +121,60 @@ end;
 
 { TAudioStreamDevice }
 
-constructor TAudioStreamDevice.Create(const a_Enumerator: IMMDeviceEnumerator; const a_DataFlowType: EDataFlow);
+constructor TAudioStreamDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
+begin
+  // Init Emurator and Init Device
+  f_Ready := InitEmurator(a_CoInitFlag) and InitDevice(a_DataFlowType);
+end;
+
+destructor TAudioStreamDevice.Destroy;
+begin
+  if Assigned(f_VolumeCallbackHandler) then
+  begin
+    // Unregister Callback Handler
+    f_AudioEndpointVolume.UnregisterControlChangeNotify(f_VolumeCallbackHandler);
+  end;
+
+  if Assigned(f_NotificationClient) then
+  begin
+    if f_NotificationClient.RefCount > 0 then
+    begin
+      // Unregister Notification Client
+      f_DeviceEnumerator.UnregisterEndpointNotificationCallback(f_NotificationClient);
+    end;
+
+    FreeAndNil(f_NotificationClient);
+  end;
+
+  CoUninitialize();
+
+  inherited;
+end;
+
+function TAudioStreamDevice.InitEmurator(const a_CoInitFlag: Integer): Boolean;
+begin
+  Result := False;
+
+  // Init COM
+  if (Succeeded(CoInitializeEx(nil, a_CoInitFlag))) and // Get DeviceEnumerator
+    (Succeeded(CoCreateInstance(CLSID_IMMDeviceEnumerator, nil, CLSCTX_ALL, IID_IMMDeviceEnumerator,
+    f_DeviceEnumerator))) then
+  begin
+    f_NotificationClient := TNotificationClient.Create(f_OnDefaultDeviceChanged);
+    // Register Notification Client
+    Result := Succeeded(f_DeviceEnumerator.RegisterEndpointNotificationCallback(f_NotificationClient));
+  end;
+end;
+
+function TAudioStreamDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
 var
   l_Id: PWideChar;
   l_PointAudioEndpointVolume: Pointer;
 begin
-  f_Ready := False;
+  Result := False;
 
   // Get Device
-  if Succeeded(a_Enumerator.GetDefaultAudioEndpoint(eCapture, eConsole, f_Device)) then
+  if Succeeded(f_DeviceEnumerator.GetDefaultAudioEndpoint(a_DataFlowType, eConsole, f_Device)) then
   begin
     // Get Device ID
     if Succeeded(f_Device.GetId(l_Id)) then
@@ -149,24 +201,13 @@ begin
             if Succeeded(f_AudioEndpointVolume.RegisterControlChangeNotify(f_VolumeCallbackHandler)) then
             begin
               // Get Audio Endpoint Volume Properties
-              f_Ready := GetAudioEndpointVolumeProps;
+              Result := GetAudioEndpointVolumeProps;
             end;
           end;
         end;
       end;
     end;
   end;
-end;
-
-destructor TAudioStreamDevice.Destroy;
-begin
-  if Assigned(f_VolumeCallbackHandler) then
-  begin
-    // Unregister Callback Handler
-    f_AudioEndpointVolume.UnregisterControlChangeNotify(f_VolumeCallbackHandler);
-  end;
-
-  inherited;
 end;
 
 procedure TAudioStreamDevice.SetDeviceDesc(const a_Value: string);

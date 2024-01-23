@@ -5,8 +5,8 @@
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <TargetedPlatforms>2</TargetedPlatforms>
         <AppType>Application</AppType>
         <MainSource>JAT_AudioStreamer.dpr</MainSource>
         <Profile Condition="'$(Platform)'=='Win64'">Win64</Profile>
@@ -141,7 +141,6 @@
         <DCCReference Include="cls_NotificationClient.pas"/>
         <DCCReference Include="cls_AudioStreamClientThread.pas"/>
         <DCCReference Include="cls_AudioStreamDevice.pas"/>
-        <DCCReference Include="cls_AudioStreamDeviceManager.pas"/>
         <None Include="README.md"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -1019,8 +1018,8 @@
                 <ProjectRoot Platform="Win64" Name="$(PROJECTNAME)"/>
             </Deployment>
             <Platforms>
-                <Platform value="Win32">True</Platform>
-                <Platform value="Win64" Profile="Win64">False</Platform>
+                <Platform value="Win32">False</Platform>
+                <Platform value="Win64" Profile="Win64">True</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

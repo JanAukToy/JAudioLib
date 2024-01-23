@@ -8,8 +8,7 @@ uses
   JAT.EndpointVolume in 'JAT.EndpointVolume.pas',
   cls_NotificationClient in 'cls_NotificationClient.pas',
   cls_AudioStreamClientThread in 'cls_AudioStreamClientThread.pas',
-  cls_AudioStreamDevice in 'cls_AudioStreamDevice.pas',
-  cls_AudioStreamDeviceManager in 'cls_AudioStreamDeviceManager.pas';
+  cls_AudioStreamDevice in 'cls_AudioStreamDevice.pas';
 
 {$R *.res}
 

@@ -6,19 +6,32 @@ uses
   System.SysUtils, System.Classes, Vcl.Forms, Vcl.ComCtrls, Vcl.Controls,
   Vcl.ToolWin, Vcl.Menus, System.Generics.Collections, Vcl.StdCtrls,
 
-  cls_AudioStreamClientThread;
+  cls_AudioStreamClientThread, Vcl.ExtCtrls;
 
 type
   TFormMain = class(TForm)
-    MainMenu1: TMainMenu;
-    pgctrl_Device: TPageControl;
+    pnl_Settings: TPanel;
+    pnl_SamplingRate: TPanel;
+    txt_SamplingRate: TLabel;
+    cmb_SamplingRate: TComboBox;
+    pnl_Bits: TPanel;
+    txt_Bits: TLabel;
+    cmb_Bits: TComboBox;
+    pnl_Channel: TPanel;
+    txt_Channel: TLabel;
+    cmb_Channel: TComboBox;
+    pnl_Control: TPanel;
+    btn_StartCapture: TButton;
+    btn_EndCapture: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure btn_StartCaptureClick(Sender: TObject);
+    procedure btn_EndCaptureClick(Sender: TObject);
   private
     { Private êÈåæ }
     f_AudioStreamClientThread: TAudioStreamClientThread;
 
-    procedure InitVar;
+    procedure OnIdleApplication(Sender: TObject; var Done: Boolean);
   public
     { Public êÈåæ }
   end;
@@ -32,7 +45,7 @@ implementation
 
 procedure TFormMain.FormCreate(Sender: TObject);
 begin
-  InitVar;
+  Application.OnIdle := OnIdleApplication;
 end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
@@ -43,9 +56,25 @@ begin
   end;
 end;
 
-procedure TFormMain.InitVar;
+procedure TFormMain.OnIdleApplication(Sender: TObject; var Done: Boolean);
+var
+  l_AssignThread: Boolean;
 begin
-  f_AudioStreamClientThread := TAudioStreamClientThread.Create;
+  l_AssignThread := Assigned(f_AudioStreamClientThread);
+
+  btn_StartCapture.Enabled := not l_AssignThread;
+  btn_EndCapture.Enabled := l_AssignThread;
+end;
+
+procedure TFormMain.btn_StartCaptureClick(Sender: TObject);
+begin
+  f_AudioStreamClientThread := TAudioStreamClientThread.Create(StrToInt(cmb_SamplingRate.Text), StrToInt(cmb_Bits.Text),
+    cmb_Channel.ItemIndex + 1);
+end;
+
+procedure TFormMain.btn_EndCaptureClick(Sender: TObject);
+begin
+  FreeAndNil(f_AudioStreamClientThread);
 end;
 
 end.
