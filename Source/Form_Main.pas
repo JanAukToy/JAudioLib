@@ -23,6 +23,9 @@ type
     pnl_Control: TPanel;
     btn_StartCapture: TButton;
     btn_EndCapture: TButton;
+    pnl_AudioType: TPanel;
+    txt_AudioType: TLabel;
+    cmb_AudioType: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btn_StartCaptureClick(Sender: TObject);
@@ -68,8 +71,8 @@ end;
 
 procedure TFormMain.btn_StartCaptureClick(Sender: TObject);
 begin
-  f_AudioStreamClientThread := TAudioStreamClientThread.Create(StrToInt(cmb_SamplingRate.Text), StrToInt(cmb_Bits.Text),
-    cmb_Channel.ItemIndex + 1);
+  f_AudioStreamClientThread := TAudioStreamClientThread.Create(TAudioType(cmb_AudioType.ItemIndex),
+    StrToInt(cmb_SamplingRate.Text), StrToInt(cmb_Bits.Text), cmb_Channel.ItemIndex + 1);
 end;
 
 procedure TFormMain.btn_EndCaptureClick(Sender: TObject);

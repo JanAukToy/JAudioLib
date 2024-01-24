@@ -161,6 +161,7 @@ begin
     f_DeviceEnumerator))) then
   begin
     f_NotificationClient := TNotificationClient.Create(f_OnDefaultDeviceChanged);
+
     // Register Notification Client
     Result := Succeeded(f_DeviceEnumerator.RegisterEndpointNotificationCallback(f_NotificationClient));
   end;

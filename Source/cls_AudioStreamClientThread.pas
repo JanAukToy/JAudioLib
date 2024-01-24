@@ -10,9 +10,12 @@ uses
   JAT.MMDeviceAPI, JAT.AudioClient, cls_AudioStreamDevice;
 
 type
+  TAudioType = (atMic, atSystem);
+
   TAudioStreamClientThread = class(TThread)
   private
-    f_CaptureDevice: TAudioStreamDevice;
+    f_AudioType: TAudioType;
+    f_StreamDevice: TAudioStreamDevice;
     f_AudioClient: IAudioClient;
     f_pWaveFormat: PWAVEFORMATEX;
     f_AudioCaptureClient: IAudioCaptureClient;
@@ -23,7 +26,7 @@ type
 
     procedure Execute_CreateWAVE;
   public
-    constructor Create(const a_Samples: Cardinal; const a_Bits, a_Channels: Word);
+    constructor Create(const a_AudioType: TAudioType; const a_Samples: Cardinal; const a_Bits, a_Channels: Word);
     destructor Destroy; override;
   protected
     procedure Execute; override;
@@ -38,8 +41,11 @@ implementation
 
 { TAudioStreamClientThread }
 
-constructor TAudioStreamClientThread.Create(const a_Samples: Cardinal; const a_Bits, a_Channels: Word);
+constructor TAudioStreamClientThread.Create(const a_AudioType: TAudioType; const a_Samples: Cardinal;
+  const a_Bits, a_Channels: Word);
 begin
+  f_AudioType := a_AudioType;
+
   // Set Format
   GetMem(f_pWaveFormat, SizeOf(tWAVEFORMATEX));
   f_pWaveFormat.wFormatTag := WAVE_FORMAT_PCM;
@@ -56,9 +62,9 @@ end;
 
 destructor TAudioStreamClientThread.Destroy;
 begin
-  if Assigned(f_CaptureDevice) then
+  if Assigned(f_StreamDevice) then
   begin
-    FreeAndNil(f_CaptureDevice);
+    FreeAndNil(f_StreamDevice);
   end;
 
   FreeMem(f_pWaveFormat, SizeOf(f_pWaveFormat^));
@@ -69,19 +75,30 @@ end;
 function TAudioStreamClientThread.StartCapture: Boolean;
 var
   l_PointAudioClient: Pointer;
+  l_StreamFlags: Cardinal;
   l_BufferFrameCount: Cardinal;
   l_PointAudioCaptureClient: Pointer;
 begin
   Result := False;
 
   // Get Audio Client
-  if Succeeded(f_CaptureDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, l_PointAudioClient)) then
+  if Succeeded(f_StreamDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, l_PointAudioClient)) then
   begin
     f_AudioClient := IAudioClient(l_PointAudioClient) as IAudioClient;
 
+    case f_AudioType of
+      atMic:
+        l_StreamFlags := AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+      atSystem:
+        l_StreamFlags := AUDCLNT_STREAMFLAGS_LOOPBACK or AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
+          AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+    else
+      l_StreamFlags := 0;
+    end;
+
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
-    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
-      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, f_pWaveFormat, TGuid.Empty)) then
+    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, f_pWaveFormat,
+      TGuid.Empty)) then
     begin
       // Get Buffer Size
       if Succeeded(f_AudioClient.GetBufferSize(l_BufferFrameCount)) then
@@ -123,6 +140,7 @@ var
   l_ChunkSize: UInt32;
   l_IncomingBufferSize: UInt32;
 
+  l_DataFlow: EDataFlow;
   l_PacketLength: UInt32;
   l_pBuffer: PByte;
   l_NumFramesAvailable: UInt32;
@@ -130,11 +148,20 @@ var
   l_DevicePosition: UInt64;
   l_QPCPosition: UInt64;
 begin
-  // Create Audio Stream Device Manager
-  f_CaptureDevice := TAudioStreamDevice.Create(COINIT_MULTITHREADED, eCapture);
+  case f_AudioType of
+    atMic:
+      l_DataFlow := eCapture;
+    atSystem:
+      l_DataFlow := eRender;
+  else
+    l_DataFlow := EDataFlow(0);
+  end;
+
+  // Create Audio Stream Device
+  f_StreamDevice := TAudioStreamDevice.Create(COINIT_MULTITHREADED, l_DataFlow);
 
   // Check Ready Device and Start Capture
-  if (f_CaptureDevice.Ready) and (StartCapture) then
+  if (f_StreamDevice.Ready) and (StartCapture) then
   begin
     l_FileStream := TFileStream.Create(ExtractFileDir(Application.ExeName) + Format('\%s.wav', [GetWaveFormatText]),
       fmCreate);
