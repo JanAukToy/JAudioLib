@@ -3,10 +3,9 @@ unit Form_Main;
 interface
 
 uses
-  System.SysUtils, System.Classes, Vcl.Forms, Vcl.ComCtrls, Vcl.Controls,
-  Vcl.ToolWin, Vcl.Menus, System.Generics.Collections, Vcl.StdCtrls, Vcl.ExtCtrls,
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls,
 
-  cls_AudioCaptureThread, cls_WaveWriter, Win.AudioClient;
+  cls_AudioCaptureThread, cls_WaveWriter, Win.AudioClient, Vcl.Controls;
 
 type
   TFormMain = class(TForm)
@@ -59,9 +58,7 @@ end;
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
   if Assigned(f_AudioCaptureThread) then
-  begin
     f_AudioCaptureThread.Terminate;
-  end;
 end;
 
 procedure TFormMain.OnIdleApplication(Sender: TObject; var Done: Boolean);
@@ -114,17 +111,12 @@ end;
 
 procedure TFormMain.OnTerminate(Sender: TObject);
 begin
-  TThread.CreateAnonymousThread(
+  TThread.Queue(nil,
     procedure
     begin
-      TThread.Queue(nil,
-        procedure
-        begin
-          f_AudioCaptureThread.WaitFor;
-          FreeAndNil(f_AudioCaptureThread);
-          FreeAndNil(f_WaveWriter);
-        end);
-    end).Start;
+      FreeAndNil(f_AudioCaptureThread);
+      FreeAndNil(f_WaveWriter);
+    end);
 end;
 
 end.
