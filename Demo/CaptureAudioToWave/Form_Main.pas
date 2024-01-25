@@ -111,12 +111,16 @@ end;
 
 procedure TFormMain.OnTerminate(Sender: TObject);
 begin
-  TThread.Queue(nil,
+  TThread.CreateAnonymousThread(
     procedure
     begin
-      FreeAndNil(f_AudioCaptureThread);
-      FreeAndNil(f_WaveWriter);
-    end);
+      TThread.Queue(nil,
+        procedure
+        begin
+          FreeAndNil(f_AudioCaptureThread);
+          FreeAndNil(f_WaveWriter);
+        end);
+    end).Start;
 end;
 
 end.
