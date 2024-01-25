@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, System.Generics.Collections,
   Winapi.Windows, Winapi.ActiveX, Winapi.PropSys,
 
-  JAT.MMDeviceAPI, JAT.EndpointVolume, cls_NotificationClient;
+  Win.MMDeviceAPI, Win.EndpointVolume, cls_NotificationClient;
 
 type
   // ***************************************************************************

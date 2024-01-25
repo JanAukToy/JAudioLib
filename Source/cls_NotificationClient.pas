@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, Winapi.Windows, Winapi.ActiveX,
 
-  JAT.MMDeviceAPI;
+  Win.MMDeviceAPI;
 
 type
   TOnDefaultDeviceChanged = procedure(const a_Flow: EDataFlow; const a_Role: ERole; const a_DeviceId: PWideChar)

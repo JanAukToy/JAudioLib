@@ -1,4 +1,4 @@
-unit JAT.EndpointVolume;
+unit Win.EndpointVolume;
 
 interface
 

@@ -15,7 +15,7 @@ type
   TOnEndCapture = procedure(const a_AllDataSize: UInt32) of object;
   TOnCaptureBuffer = procedure(const a_pBytes: PByte; const a_Count: Integer) of object;
 
-  TAudioStreamClientThread = class(TThread)
+  TAudioCaptureThread = class(TThread)
   private
     f_AudioType: TAudioType;
     f_OnStartCapture: TOnStartCapture;
@@ -49,7 +49,7 @@ implementation
 
 { TAudioStreamClientThread }
 
-constructor TAudioStreamClientThread.Create(const a_AudioType: TAudioType; const a_Samples: Cardinal;
+constructor TAudioCaptureThread.Create(const a_AudioType: TAudioType; const a_Samples: Cardinal;
   const a_Bits, a_Channels: Word);
 begin
   f_AudioType := a_AudioType;
@@ -68,7 +68,7 @@ begin
   inherited Create(False);
 end;
 
-destructor TAudioStreamClientThread.Destroy;
+destructor TAudioCaptureThread.Destroy;
 begin
   if Assigned(f_StreamDevice) then
   begin
@@ -80,7 +80,7 @@ begin
   inherited;
 end;
 
-function TAudioStreamClientThread.StartCapture: Boolean;
+function TAudioCaptureThread.StartCapture: Boolean;
 var
   l_PointAudioClient: Pointer;
   l_StreamFlags: Cardinal;
@@ -128,7 +128,7 @@ begin
   end;
 end;
 
-procedure TAudioStreamClientThread.Execute;
+procedure TAudioCaptureThread.Execute;
 var
   l_DataSize: UInt32;
   l_IncomingBufferSize: UInt32;
