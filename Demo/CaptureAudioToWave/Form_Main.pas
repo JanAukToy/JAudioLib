@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Classes, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Controls,
 
-  JAT.AudioCaptureThread, JAT.WaveWriter, JAT.Win.AudioClient;
+  JAT.CaptureAudioThread, JAT.WaveWriter, JAT.Win.AudioClient;
 
 type
   TFormMain = class(TForm)
@@ -31,13 +31,13 @@ type
     procedure btn_EndCaptureClick(Sender: TObject);
   private
     { Private êÈåæ }
-    f_AudioCaptureThread: TAudioCaptureThread;
+    f_CaptureAudioThread: TCaptureAudioThread;
     f_WaveWriter: TWaveWriter;
 
     procedure OnIdleApplication(Sender: TObject; var Done: Boolean);
     procedure OnStartCapture(const a_pFormat: PWAVEFORMATEX);
     procedure OnEndCapture(const a_AllDataSize: UInt32);
-    procedure OnCaptureBuffer(const a_pBytes: PByte; const a_Count: Integer);
+    procedure OnCaptureBuffer(const a_pData: PByte; const a_Count: Integer);
     procedure OnTerminate(Sender: TObject);
   public
     { Public êÈåæ }
@@ -57,15 +57,15 @@ end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  if Assigned(f_AudioCaptureThread) then
-    f_AudioCaptureThread.Terminate;
+  if Assigned(f_CaptureAudioThread) then
+    f_CaptureAudioThread.Terminate;
 end;
 
 procedure TFormMain.OnIdleApplication(Sender: TObject; var Done: Boolean);
 var
   l_isRunningThread: Boolean;
 begin
-  l_isRunningThread := Assigned(f_AudioCaptureThread) and (not f_AudioCaptureThread.Finished);
+  l_isRunningThread := Assigned(f_CaptureAudioThread) and (not f_CaptureAudioThread.Finished);
 
   btn_StartCapture.Enabled := not l_isRunningThread;
   btn_EndCapture.Enabled := l_isRunningThread;
@@ -74,20 +74,23 @@ end;
 procedure TFormMain.btn_StartCaptureClick(Sender: TObject);
 begin
   // Create Capture Thread
-  f_AudioCaptureThread := TAudioCaptureThread.Create(TAudioType(cmb_AudioType.ItemIndex),
+  f_CaptureAudioThread := TCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex),
     StrToInt(cmb_SamplingRate.Text), StrToInt(cmb_Bits.Text), cmb_Channel.ItemIndex + 1);
 
   // Assign Handlers
-  f_AudioCaptureThread.OnStartCapture := OnStartCapture;
-  f_AudioCaptureThread.OnEndCapture := OnEndCapture;
-  f_AudioCaptureThread.OnCaptureBuffer := OnCaptureBuffer;
-  f_AudioCaptureThread.OnTerminate := OnTerminate;
+  f_CaptureAudioThread.OnStartCapture := OnStartCapture;
+  f_CaptureAudioThread.OnEndCapture := OnEndCapture;
+  f_CaptureAudioThread.OnCaptureBuffer := OnCaptureBuffer;
+  f_CaptureAudioThread.OnTerminate := OnTerminate;
 end;
 
 procedure TFormMain.btn_EndCaptureClick(Sender: TObject);
 begin
-  if Assigned(f_AudioCaptureThread) then
-    f_AudioCaptureThread.Terminate;
+  if Assigned(f_CaptureAudioThread) then
+  begin
+    f_CaptureAudioThread.Terminate;
+    f_CaptureAudioThread := nil;
+  end;
 end;
 
 procedure TFormMain.OnStartCapture(const a_pFormat: PWAVEFORMATEX);
@@ -103,10 +106,10 @@ begin
   f_WaveWriter.Close(a_AllDataSize);
 end;
 
-procedure TFormMain.OnCaptureBuffer(const a_pBytes: PByte; const a_Count: Integer);
+procedure TFormMain.OnCaptureBuffer(const a_pData: PByte; const a_Count: Integer);
 begin
   // Write Buffer
-  f_WaveWriter.WriteBuffer(a_pBytes, a_Count);
+  f_WaveWriter.WriteBuffer(a_pData, a_Count);
 end;
 
 procedure TFormMain.OnTerminate(Sender: TObject);
@@ -117,7 +120,7 @@ begin
       TThread.Synchronize(nil,
         procedure
         begin
-          FreeAndNil(f_AudioCaptureThread);
+          FreeAndNil(f_CaptureAudioThread);
           FreeAndNil(f_WaveWriter);
         end);
     end).Start;

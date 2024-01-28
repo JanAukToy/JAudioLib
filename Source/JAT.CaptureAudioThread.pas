@@ -1,4 +1,4 @@
-unit JAT.AudioCaptureThread;
+unit JAT.CaptureAudioThread;
 
 interface
 
@@ -7,22 +7,22 @@ uses
   System.StrUtils, Winapi.Windows, Winapi.ActiveX, Winapi.MMSystem,
   Vcl.Forms,
 
-  JAT.Win.MMDeviceAPI, JAT.Win.AudioClient, JAT.AudioStreamDevice;
+  JAT.Win.MMDeviceAPI, JAT.Win.AudioClient, JAT.AudioDevice;
 
 type
   TAudioType = (atMic, atSystem);
   TOnStartCapture = procedure(const a_pFormat: PWAVEFORMATEX) of object;
   TOnEndCapture = procedure(const a_AllDataSize: UInt32) of object;
-  TOnCaptureBuffer = procedure(const a_pBytes: PByte; const a_Count: Integer) of object;
+  TOnCaptureBuffer = procedure(const a_pData: PByte; const a_Count: Integer) of object;
 
-  TAudioCaptureThread = class(TThread)
+  TCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
     f_OnStartCapture: TOnStartCapture;
     f_OnEndCapture: TOnEndCapture;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
-    f_StreamDevice: TAudioStreamDevice;
+    f_AudioDevice: TAudioDevice;
     f_AudioClient: IAudioClient;
     f_pWaveFormat: PWAVEFORMATEX;
     f_AudioCaptureClient: IAudioCaptureClient;
@@ -49,7 +49,7 @@ implementation
 
 { TAudioStreamClientThread }
 
-constructor TAudioCaptureThread.Create(const a_AudioType: TAudioType; const a_Samples: Cardinal;
+constructor TCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Samples: Cardinal;
   const a_Bits, a_Channels: Word);
 begin
   f_AudioType := a_AudioType;
@@ -64,23 +64,21 @@ begin
   f_pWaveFormat.nAvgBytesPerSec := f_pWaveFormat.nSamplesPerSec * f_pWaveFormat.nBlockAlign;
   f_pWaveFormat.cbSize := 0;
 
-  FreeOnTerminate := False;
+  FreeOnTerminate := True;
   inherited Create(False);
 end;
 
-destructor TAudioCaptureThread.Destroy;
+destructor TCaptureAudioThread.Destroy;
 begin
-  if Assigned(f_StreamDevice) then
-  begin
-    FreeAndNil(f_StreamDevice);
-  end;
+  if Assigned(f_AudioDevice) then
+    FreeAndNil(f_AudioDevice);
 
   FreeMem(f_pWaveFormat, SizeOf(f_pWaveFormat^));
 
   inherited;
 end;
 
-function TAudioCaptureThread.StartCapture: Boolean;
+function TCaptureAudioThread.StartCapture: Boolean;
 var
   l_PointAudioClient: Pointer;
   l_StreamFlags: Cardinal;
@@ -90,7 +88,7 @@ begin
   Result := False;
 
   // Get Audio Client
-  if Succeeded(f_StreamDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, l_PointAudioClient)) then
+  if Succeeded(f_AudioDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, l_PointAudioClient)) then
   begin
     f_AudioClient := IAudioClient(l_PointAudioClient) as IAudioClient;
 
@@ -124,11 +122,10 @@ begin
         end;
       end;
     end;
-
   end;
 end;
 
-procedure TAudioCaptureThread.Execute;
+procedure TCaptureAudioThread.Execute;
 var
   l_DataSize: UInt32;
   l_IncomingBufferSize: UInt32;
@@ -150,11 +147,11 @@ begin
     l_DataFlow := EDataFlow(0);
   end;
 
-  // Create Audio Stream Device
-  f_StreamDevice := TAudioStreamDevice.Create(COINIT_MULTITHREADED, l_DataFlow);
+  // Create Audio Device
+  f_AudioDevice := TAudioDevice.Create(COINIT_MULTITHREADED, l_DataFlow);
 
-  // Check Ready Device and Start Capture
-  if (f_StreamDevice.Ready) and (StartCapture) then
+  // Check ready device and start capture
+  if (f_AudioDevice.Ready) and (StartCapture) then
   begin
     // Callback Start Capture
     if Assigned(f_OnStartCapture) then
@@ -167,19 +164,19 @@ begin
       // Wait...
       TThread.Sleep(Round(f_ActualDuration / REFTIMES_PER_MSEC / 2));
 
-      // Get Packet Size
+      // Get packet size
       if Succeeded(f_AudioCaptureClient.GetNextPacketSize(l_PacketLength)) then
       begin
-        // Process All Packet
+        // Process all packet
         while l_PacketLength <> 0 do
         begin
           l_pBuffer := nil;
 
-          // Get Buffer Pointer
+          // Get buffer pointer
           if Succeeded(f_AudioCaptureClient.GetBuffer(l_pBuffer, l_NumFramesAvailable, l_Flags, l_DevicePosition,
             l_QPCPosition)) then
           begin
-            // Check Non Audio
+            // Check sirent
             if (l_Flags and Ord(AUDCLNT_BUFFERFLAGS_SILENT)) > 0 then
             begin
               l_pBuffer := nil;
@@ -198,7 +195,7 @@ begin
 
             if Succeeded(f_AudioCaptureClient.ReleaseBuffer(l_NumFramesAvailable)) then
             begin
-              // Get Next Packet Size
+              // Get next packet size
               f_AudioCaptureClient.GetNextPacketSize(l_PacketLength);
             end;
           end;

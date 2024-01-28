@@ -1,4 +1,4 @@
-unit JAT.AudioStreamDevice;
+unit JAT.AudioDevice;
 
 interface
 
@@ -27,7 +27,7 @@ type
   TOnChangeMasterLevel = procedure(const a_Value: Integer) of object;
   TOnChangeMute = procedure(const a_Value: Boolean) of object;
 
-  TAudioStreamDevice = class
+  TAudioDevice = class
   private
     f_Ready: Boolean;
     f_VolumeCallbackHandler: TAudioEndpointVolumeCallbackHandler;
@@ -121,13 +121,13 @@ end;
 
 { TAudioStreamDevice }
 
-constructor TAudioStreamDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
+constructor TAudioDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
 begin
   // Init Emurator and Init Device
   f_Ready := InitEmurator(a_CoInitFlag) and InitDevice(a_DataFlowType);
 end;
 
-destructor TAudioStreamDevice.Destroy;
+destructor TAudioDevice.Destroy;
 begin
   if Assigned(f_VolumeCallbackHandler) then
   begin
@@ -151,7 +151,7 @@ begin
   inherited;
 end;
 
-function TAudioStreamDevice.InitEmurator(const a_CoInitFlag: Integer): Boolean;
+function TAudioDevice.InitEmurator(const a_CoInitFlag: Integer): Boolean;
 begin
   Result := False;
 
@@ -167,7 +167,7 @@ begin
   end;
 end;
 
-function TAudioStreamDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
+function TAudioDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
 var
   l_Id: PWideChar;
   l_PointAudioEndpointVolume: Pointer;
@@ -211,7 +211,7 @@ begin
   end;
 end;
 
-procedure TAudioStreamDevice.SetDeviceDesc(const a_Value: string);
+procedure TAudioDevice.SetDeviceDesc(const a_Value: string);
 var
   l_Variant: TPropVariant;
 begin
@@ -224,17 +224,17 @@ begin
   end;
 end;
 
-procedure TAudioStreamDevice.SetMasterLevel(const a_Value: Single);
+procedure TAudioDevice.SetMasterLevel(const a_Value: Single);
 begin
   f_AudioEndpointVolume.SetMasterVolumeLevelScalar(a_Value, GUID_NULL);
 end;
 
-procedure TAudioStreamDevice.SetMute(const a_Value: Boolean);
+procedure TAudioDevice.SetMute(const a_Value: Boolean);
 begin
   f_AudioEndpointVolume.SetMute(a_Value, GUID_NULL);
 end;
 
-function TAudioStreamDevice.GetDeviceProps(const a_PropertyStore: IPropertyStore): Boolean;
+function TAudioDevice.GetDeviceProps(const a_PropertyStore: IPropertyStore): Boolean;
 var
   l_PropInterfaceFriendlyName: TPropVariant;
   l_PropDeviceDesc: TPropVariant;
@@ -260,7 +260,7 @@ begin
   end;
 end;
 
-function TAudioStreamDevice.GetAudioEndpointVolumeProps: Boolean;
+function TAudioDevice.GetAudioEndpointVolumeProps: Boolean;
 var
   ii: Cardinal;
   l_ChannelCount: Cardinal;
@@ -318,7 +318,7 @@ begin
   end;
 end;
 
-procedure TAudioStreamDevice.OnControlChangeNotify(const a_Data: AUDIO_VOLUME_NOTIFICATION_DATA);
+procedure TAudioDevice.OnControlChangeNotify(const a_Data: AUDIO_VOLUME_NOTIFICATION_DATA);
 begin
   f_ChannelCount := a_Data.nChannels;
 
