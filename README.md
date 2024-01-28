@@ -11,12 +11,15 @@ Primarily use Windows WASAPI.
 
 * Capture Mic Audio.
 * Capture System Audio.
-* Save To Wave(Format customizable).
+* Capture audio save To Wave(Format customizable).
+* Render(Play) audio from Wave.
 
 ## Summary
 
-1. Download this Zip.
+1. Download this Zip(or Clone).
 2. Add the 'Source' directory to the Delphi library path.
+
+* This library prefix is "JAT.*.pas".
 
 ## License
 
