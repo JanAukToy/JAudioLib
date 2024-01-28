@@ -3,9 +3,9 @@ unit Form_Main;
 interface
 
 uses
-  System.SysUtils, System.Classes, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls,
+  System.SysUtils, System.Classes, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Controls,
 
-  cls_AudioCaptureThread, cls_WaveWriter, Win.AudioClient, Vcl.Controls;
+  JAT.AudioCaptureThread, JAT.WaveWriter, JAT.Win.AudioClient;
 
 type
   TFormMain = class(TForm)
@@ -114,7 +114,7 @@ begin
   TThread.CreateAnonymousThread(
     procedure
     begin
-      TThread.Queue(nil,
+      TThread.Synchronize(nil,
         procedure
         begin
           FreeAndNil(f_AudioCaptureThread);

@@ -1,11 +1,11 @@
-unit cls_WaveWriter;
+unit JAT.WaveWriter;
 
 interface
 
 uses
   System.Classes, System.SysUtils,
 
-  Win.AudioClient;
+  JAT.Win.AudioClient;
 
 type
   TWaveWriter = class

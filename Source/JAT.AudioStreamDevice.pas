@@ -1,4 +1,4 @@
-unit cls_AudioStreamDevice;
+unit JAT.AudioStreamDevice;
 
 interface
 
@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, System.Generics.Collections,
   Winapi.Windows, Winapi.ActiveX, Winapi.PropSys,
 
-  Win.MMDeviceAPI, Win.EndpointVolume, cls_NotificationClient;
+  JAT.Win.MMDeviceAPI, JAT.Win.EndpointVolume, JAT.NotificationClient;
 
 type
   // ***************************************************************************
