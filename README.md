@@ -24,7 +24,7 @@ Primarily use Windows WASAPI.
 1. Download this Zip(or Clone).
 2. Add the 'Source' directory to the Delphi library path.
 
-* This library prefix is "JAT.*.pas".
+* This library units prefix is "Jal*.pas"(main classes is "TJal*").
 
 ## License
 
