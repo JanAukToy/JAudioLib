@@ -19,14 +19,14 @@ type
 
     f_AudioDevice: TAudioDevice;
     f_AudioClient: IAudioClient;
-    f_WaveFormat: WAVEFORMATEX;
+    f_pWaveFormat: PWAVEFORMATEX;
     f_AudioRenderClient: IAudioRenderClient;
     f_BufferFrameCount: Cardinal;
     f_ActualDuration: REFERENCE_TIME;
 
     function StartRender: Boolean;
   public
-    constructor Create(const a_WAVEFORMATEX: WAVEFORMATEX);
+    constructor Create(const a_pFormat: PWAVEFORMATEX);
     destructor Destroy; override;
 
     property OnRenderBuffer: TOnRenderBuffer write f_OnRenderBuffer;
@@ -43,9 +43,9 @@ implementation
 
 { TRenderAudioThread }
 
-constructor TRenderAudioThread.Create(const a_WAVEFORMATEX: WAVEFORMATEX);
+constructor TRenderAudioThread.Create(const a_pFormat: PWAVEFORMATEX);
 begin
-  f_WaveFormat := a_WAVEFORMATEX;
+  f_pWaveFormat := a_pFormat;
 
   FreeOnTerminate := True;
   inherited Create(False);
@@ -74,13 +74,13 @@ begin
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
-      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, @f_WaveFormat, TGuid.Empty)) then
+      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, f_pWaveFormat, TGuid.Empty)) then
     begin
       // Get buffer size
       if Succeeded(f_AudioClient.GetBufferSize(f_BufferFrameCount)) then
       begin
         // Get Duration
-        f_ActualDuration := Round(REFTIMES_PER_SEC * f_BufferFrameCount / f_WaveFormat.nSamplesPerSec);
+        f_ActualDuration := Round(REFTIMES_PER_SEC * f_BufferFrameCount / f_pWaveFormat.nSamplesPerSec);
 
         // Get Audio Render Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioRenderClient, l_PointAudioRenderClient)) then

@@ -54,14 +54,15 @@ end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  btn_EndPlayClick(Self);
+  if Assigned(f_RenderAudioThread) then
+    f_RenderAudioThread.Terminate;
 end;
 
 procedure TFormMain.OnIdleApplication(Sender: TObject; var Done: Boolean);
 var
   l_isRunningThread: Boolean;
 begin
-  l_isRunningThread := Assigned(f_RenderAudioThread) and (not f_RenderAudioThread.Finished);
+  l_isRunningThread := Assigned(f_RenderAudioThread);
 
   btn_StartPlay.Enabled := not l_isRunningThread;
   btn_EndPlay.Enabled := l_isRunningThread;
@@ -85,7 +86,7 @@ begin
     if f_WaveReader.Available then
     begin
       // Create Render Thread
-      f_RenderAudioThread := TRenderAudioThread.Create(f_WaveReader.Format);
+      f_RenderAudioThread := TRenderAudioThread.Create(@f_WaveReader.Format);
       f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
       f_RenderAudioThread.OnTerminate := OnTerminate;
     end;
@@ -95,10 +96,7 @@ end;
 procedure TFormMain.btn_EndPlayClick(Sender: TObject);
 begin
   if Assigned(f_RenderAudioThread) then
-  begin
     f_RenderAudioThread.Terminate;
-    f_RenderAudioThread := nil;
-  end;
 end;
 
 procedure TFormMain.OnRenderBuffer(const a_Sender: TThread; const a_pData: PByte; const a_AvailableCount: Cardinal;

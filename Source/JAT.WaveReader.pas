@@ -85,6 +85,8 @@ begin
         // Without extension block
         if l_FmtSize = 16 then
         begin
+          f_Format.cbSize := 0;
+
           // Read Data chunk
           l_DataIdent := f_BinaryReader.ReadChars(4);
           l_DataSize := f_BinaryReader.ReadCardinal;

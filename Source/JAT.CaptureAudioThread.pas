@@ -11,15 +11,11 @@ uses
 
 type
   TAudioType = (atMic, atSystem);
-  TOnStartCapture = procedure(const a_pFormat: PWAVEFORMATEX) of object;
-  TOnEndCapture = procedure(const a_AllDataSize: UInt32) of object;
-  TOnCaptureBuffer = procedure(const a_pData: PByte; const a_Count: Integer) of object;
+  TOnCaptureBuffer = procedure(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer) of object;
 
   TCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
-    f_OnStartCapture: TOnStartCapture;
-    f_OnEndCapture: TOnEndCapture;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
     f_AudioDevice: TAudioDevice;
@@ -30,11 +26,9 @@ type
 
     function StartCapture: Boolean;
   public
-    constructor Create(const a_AudioType: TAudioType; const a_Samples: Cardinal; const a_Bits, a_Channels: Word);
+    constructor Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX);
     destructor Destroy; override;
 
-    property OnStartCapture: TOnStartCapture write f_OnStartCapture;
-    property OnEndCapture: TOnEndCapture write f_OnEndCapture;
     property OnCaptureBuffer: TOnCaptureBuffer write f_OnCaptureBuffer;
   protected
     procedure Execute; override;
@@ -47,22 +41,15 @@ const
 
 implementation
 
+uses
+  JalWaveHelper;
+
 { TAudioStreamClientThread }
 
-constructor TCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Samples: Cardinal;
-  const a_Bits, a_Channels: Word);
+constructor TCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX);
 begin
   f_AudioType := a_AudioType;
-
-  // Set Format
-  GetMem(f_pWaveFormat, SizeOf(tWAVEFORMATEX));
-  f_pWaveFormat.wFormatTag := WAVE_FORMAT_PCM;
-  f_pWaveFormat.nChannels := a_Channels;
-  f_pWaveFormat.nSamplesPerSec := a_Samples;
-  f_pWaveFormat.wBitsPerSample := a_Bits;
-  f_pWaveFormat.nBlockAlign := Round(f_pWaveFormat.nChannels * f_pWaveFormat.wBitsPerSample / 8);
-  f_pWaveFormat.nAvgBytesPerSec := f_pWaveFormat.nSamplesPerSec * f_pWaveFormat.nBlockAlign;
-  f_pWaveFormat.cbSize := 0;
+  f_pWaveFormat := a_pFormat;
 
   FreeOnTerminate := True;
   inherited Create(False);
@@ -72,8 +59,6 @@ destructor TCaptureAudioThread.Destroy;
 begin
   if Assigned(f_AudioDevice) then
     FreeAndNil(f_AudioDevice);
-
-  FreeMem(f_pWaveFormat, SizeOf(f_pWaveFormat^));
 
   inherited;
 end;
@@ -127,7 +112,6 @@ end;
 
 procedure TCaptureAudioThread.Execute;
 var
-  l_DataSize: UInt32;
   l_IncomingBufferSize: UInt32;
 
   l_DataFlow: EDataFlow;
@@ -153,12 +137,6 @@ begin
   // Check ready device and start capture
   if (f_AudioDevice.Ready) and (StartCapture) then
   begin
-    // Callback Start Capture
-    if Assigned(f_OnStartCapture) then
-      f_OnStartCapture(f_pWaveFormat);
-
-    l_DataSize := 0;
-
     while (not Terminated) do
     begin
       // Wait...
@@ -188,9 +166,7 @@ begin
 
               // Callback Capture Buffer
               if Assigned(f_OnCaptureBuffer) then
-                f_OnCaptureBuffer(l_pBuffer, l_IncomingBufferSize);
-
-              Inc(l_DataSize, l_IncomingBufferSize);
+                f_OnCaptureBuffer(Self, l_pBuffer, l_IncomingBufferSize);
             end;
 
             if Succeeded(f_AudioCaptureClient.ReleaseBuffer(l_NumFramesAvailable)) then
@@ -205,10 +181,6 @@ begin
 
     // Stop Capture
     f_AudioClient.Stop;
-
-    // Callback End Capture
-    if Assigned(f_OnEndCapture) then
-      f_OnEndCapture(l_DataSize);
   end;
 end;
 
