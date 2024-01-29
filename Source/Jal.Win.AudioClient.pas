@@ -1,4 +1,4 @@
-unit JAT.Win.AudioClient;
+unit Jal.Win.AudioClient;
 
 interface
 

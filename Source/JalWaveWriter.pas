@@ -1,14 +1,14 @@
-unit JAT.WaveWriter;
+unit JalWaveWriter;
 
 interface
 
 uses
   System.Classes, System.SysUtils,
 
-  JAT.Win.AudioClient;
+  Jal.Win.AudioClient;
 
 type
-  TWaveWriter = class
+  TJalWaveWriter = class
   private
     f_Format: WAVEFORMATEX;
     f_FileStream: TFileStream;
@@ -29,7 +29,7 @@ implementation
 
 { TWaveWriter }
 
-constructor TWaveWriter.Create(const a_DirFileName: string; const a_Format: WAVEFORMATEX);
+constructor TJalWaveWriter.Create(const a_DirFileName: string; const a_Format: WAVEFORMATEX);
 begin
   f_Format := a_Format;
 
@@ -56,7 +56,7 @@ begin
   f_DataSize := 0;
 end;
 
-destructor TWaveWriter.Destroy;
+destructor TJalWaveWriter.Destroy;
 begin
   Close;
 
@@ -66,7 +66,7 @@ begin
   inherited;
 end;
 
-procedure TWaveWriter.WriteBuffer(const a_pSource: PByte; const a_Count: Integer);
+procedure TJalWaveWriter.WriteBuffer(const a_pSource: PByte; const a_Count: Integer);
 var
   l_Bytes: TBytes;
 begin
@@ -80,7 +80,7 @@ begin
   Inc(f_DataSize, a_Count);
 end;
 
-procedure TWaveWriter.Close;
+procedure TJalWaveWriter.Close;
 begin
   // Write Chunk
   f_BinaryWriter.Seek(4, TSeekOrigin.soBeginning);

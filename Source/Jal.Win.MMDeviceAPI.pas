@@ -1,10 +1,10 @@
-unit JAT.Win.MMDeviceAPI;
+unit Jal.Win.MMDeviceAPI;
 
 interface
 
 uses
   Winapi.Windows, Winapi.ActiveX, Winapi.PropSys,
-  JAT.Win.EndpointVolume, JAT.Win.AudioClient;
+  Jal.Win.EndpointVolume, Jal.Win.AudioClient;
 
 const
   CLSID_IMMDeviceEnumerator: TGUID = '{BCDE0395-E52F-467C-8E3D-C4579291692E}';

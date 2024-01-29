@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.MMSystem,
-  JAT.Win.AudioClient;
+  Jal.Win.AudioClient;
 
 type
   TJalWaveHelper = class

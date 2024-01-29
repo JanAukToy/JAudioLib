@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls,
 
-  JAT.RenderAudioThread, JAT.WaveReader, JAT.Win.AudioClient;
+  JalRenderAudioThread, JalWaveReader, Jal.Win.AudioClient;
 
 type
   TFormMain = class(TForm)
@@ -26,8 +26,8 @@ type
     procedure FormCreate(Sender: TObject);
   private
     { Private êÈåæ }
-    f_RenderAudioThread: TRenderAudioThread;
-    f_WaveReader: TWaveReader;
+    f_RenderAudioThread: TJalRenderAudioThread;
+    f_WaveReader: TJalWaveReader;
 
     procedure OnIdleApplication(Sender: TObject; var Done: Boolean);
     procedure OnRenderBuffer(const a_Sender: TThread; const a_pData: PByte; const a_AvailableCount: Cardinal;
@@ -81,12 +81,12 @@ begin
   if FileExists(edt_DirWaveFile.Text) then
   begin
     // Create Wave Reader
-    f_WaveReader := TWaveReader.Create(edt_DirWaveFile.Text);
+    f_WaveReader := TJalWaveReader.Create(edt_DirWaveFile.Text);
 
     if f_WaveReader.Available then
     begin
       // Create Render Thread
-      f_RenderAudioThread := TRenderAudioThread.Create(@f_WaveReader.Format);
+      f_RenderAudioThread := TJalRenderAudioThread.Create(@f_WaveReader.Format);
       f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
       f_RenderAudioThread.OnTerminate := OnTerminate;
     end;

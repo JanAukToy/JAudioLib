@@ -1,4 +1,4 @@
-unit JAT.AudioDevice;
+unit JalAudioDevice;
 
 interface
 
@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Classes, System.Generics.Collections,
   Winapi.Windows, Winapi.ActiveX, Winapi.PropSys,
 
-  JAT.Win.MMDeviceAPI, JAT.Win.EndpointVolume, JAT.NotificationClient;
+  Jal.Win.MMDeviceAPI, Jal.Win.EndpointVolume, JalNotificationClient;
 
 type
   // ***************************************************************************
@@ -27,7 +27,7 @@ type
   TOnChangeMasterLevel = procedure(const a_Value: Integer) of object;
   TOnChangeMute = procedure(const a_Value: Boolean) of object;
 
-  TAudioDevice = class
+  TJalAudioDevice = class
   private
     f_Ready: Boolean;
     f_VolumeCallbackHandler: TAudioEndpointVolumeCallbackHandler;
@@ -35,7 +35,7 @@ type
 
     // Device Emurator...
     f_DeviceEnumerator: IMMDeviceEnumerator;
-    f_NotificationClient: TNotificationClient;
+    f_NotificationClient: TJalNotificationClient;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
 
     // Device Props...
@@ -121,13 +121,13 @@ end;
 
 { TAudioStreamDevice }
 
-constructor TAudioDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
+constructor TJalAudioDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
 begin
   // Init Emurator and Init Device
   f_Ready := InitEmurator(a_CoInitFlag) and InitDevice(a_DataFlowType);
 end;
 
-destructor TAudioDevice.Destroy;
+destructor TJalAudioDevice.Destroy;
 begin
   if Assigned(f_VolumeCallbackHandler) then
   begin
@@ -151,7 +151,7 @@ begin
   inherited;
 end;
 
-function TAudioDevice.InitEmurator(const a_CoInitFlag: Integer): Boolean;
+function TJalAudioDevice.InitEmurator(const a_CoInitFlag: Integer): Boolean;
 begin
   Result := False;
 
@@ -160,14 +160,14 @@ begin
     (Succeeded(CoCreateInstance(CLSID_IMMDeviceEnumerator, nil, CLSCTX_ALL, IID_IMMDeviceEnumerator,
     f_DeviceEnumerator))) then
   begin
-    f_NotificationClient := TNotificationClient.Create(f_OnDefaultDeviceChanged);
+    f_NotificationClient := TJalNotificationClient.Create(f_OnDefaultDeviceChanged);
 
     // Register Notification Client
     Result := Succeeded(f_DeviceEnumerator.RegisterEndpointNotificationCallback(f_NotificationClient));
   end;
 end;
 
-function TAudioDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
+function TJalAudioDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
 var
   l_Id: PWideChar;
   l_PointAudioEndpointVolume: Pointer;
@@ -211,7 +211,7 @@ begin
   end;
 end;
 
-procedure TAudioDevice.SetDeviceDesc(const a_Value: string);
+procedure TJalAudioDevice.SetDeviceDesc(const a_Value: string);
 var
   l_Variant: TPropVariant;
 begin
@@ -224,17 +224,17 @@ begin
   end;
 end;
 
-procedure TAudioDevice.SetMasterLevel(const a_Value: Single);
+procedure TJalAudioDevice.SetMasterLevel(const a_Value: Single);
 begin
   f_AudioEndpointVolume.SetMasterVolumeLevelScalar(a_Value, GUID_NULL);
 end;
 
-procedure TAudioDevice.SetMute(const a_Value: Boolean);
+procedure TJalAudioDevice.SetMute(const a_Value: Boolean);
 begin
   f_AudioEndpointVolume.SetMute(a_Value, GUID_NULL);
 end;
 
-function TAudioDevice.GetDeviceProps(const a_PropertyStore: IPropertyStore): Boolean;
+function TJalAudioDevice.GetDeviceProps(const a_PropertyStore: IPropertyStore): Boolean;
 var
   l_PropInterfaceFriendlyName: TPropVariant;
   l_PropDeviceDesc: TPropVariant;
@@ -260,7 +260,7 @@ begin
   end;
 end;
 
-function TAudioDevice.GetAudioEndpointVolumeProps: Boolean;
+function TJalAudioDevice.GetAudioEndpointVolumeProps: Boolean;
 var
   ii: Cardinal;
   l_ChannelCount: Cardinal;
@@ -318,7 +318,7 @@ begin
   end;
 end;
 
-procedure TAudioDevice.OnControlChangeNotify(const a_Data: AUDIO_VOLUME_NOTIFICATION_DATA);
+procedure TJalAudioDevice.OnControlChangeNotify(const a_Data: AUDIO_VOLUME_NOTIFICATION_DATA);
 begin
   f_ChannelCount := a_Data.nChannels;
 

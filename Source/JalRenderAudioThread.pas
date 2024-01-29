@@ -1,4 +1,4 @@
-unit JAT.RenderAudioThread;
+unit JalRenderAudioThread;
 
 interface
 
@@ -7,17 +7,17 @@ uses
   System.StrUtils, Winapi.Windows, Winapi.ActiveX, Winapi.MMSystem,
   Vcl.Forms,
 
-  JAT.Win.MMDeviceAPI, JAT.Win.AudioClient, JAT.AudioDevice;
+  Jal.Win.MMDeviceAPI, Jal.Win.AudioClient, JalAudioDevice;
 
 type
   TOnRenderBuffer = procedure(const a_Sender: TThread; const a_pData: PByte; const a_AvailableCount: Cardinal;
     var a_Flags: DWORD) of object;
 
-  TRenderAudioThread = class(TThread)
+  TJalRenderAudioThread = class(TThread)
   private
     f_OnRenderBuffer: TOnRenderBuffer;
 
-    f_AudioDevice: TAudioDevice;
+    f_AudioDevice: TJalAudioDevice;
     f_AudioClient: IAudioClient;
     f_pWaveFormat: PWAVEFORMATEX;
     f_AudioRenderClient: IAudioRenderClient;
@@ -43,7 +43,7 @@ implementation
 
 { TRenderAudioThread }
 
-constructor TRenderAudioThread.Create(const a_pFormat: PWAVEFORMATEX);
+constructor TJalRenderAudioThread.Create(const a_pFormat: PWAVEFORMATEX);
 begin
   f_pWaveFormat := a_pFormat;
 
@@ -51,7 +51,7 @@ begin
   inherited Create(False);
 end;
 
-destructor TRenderAudioThread.Destroy;
+destructor TJalRenderAudioThread.Destroy;
 begin
   if Assigned(f_AudioDevice) then
     FreeAndNil(f_AudioDevice);
@@ -59,7 +59,7 @@ begin
   inherited;
 end;
 
-function TRenderAudioThread.StartRender: Boolean;
+function TJalRenderAudioThread.StartRender: Boolean;
 var
   l_PointAudioClient: Pointer;
   l_PointAudioRenderClient: Pointer;
@@ -102,7 +102,7 @@ begin
   end;
 end;
 
-procedure TRenderAudioThread.Execute;
+procedure TJalRenderAudioThread.Execute;
 var
   l_NumFramesPadding: UInt32;
   l_NumFramesAvailable: UInt32;
@@ -110,7 +110,7 @@ var
   l_Flags: DWORD;
 begin
   // Create Audio Device
-  f_AudioDevice := TAudioDevice.Create(COINIT_MULTITHREADED, eRender);
+  f_AudioDevice := TJalAudioDevice.Create(COINIT_MULTITHREADED, eRender);
 
   // Check ready device and start render
   if (f_AudioDevice.Ready) and (StartRender) then

@@ -1,14 +1,14 @@
-unit JAT.WaveReader;
+unit JalWaveReader;
 
 interface
 
 uses
   System.Classes, System.SysUtils, Winapi.MMSystem,
 
-  JAT.Win.AudioClient;
+  Jal.Win.AudioClient;
 
 type
-  TWaveReader = class
+  TJalWaveReader = class
   private
     f_Available: Boolean;
     f_FileStream: TFileStream;
@@ -31,7 +31,7 @@ implementation
 
 { TWaveReader }
 
-constructor TWaveReader.Create(const a_DirFileName: string);
+constructor TJalWaveReader.Create(const a_DirFileName: string);
 var
   l_RIFF: TArray<Char>;
   l_RIFFStr: string;
@@ -117,7 +117,7 @@ begin
   end;
 end;
 
-destructor TWaveReader.Destroy;
+destructor TJalWaveReader.Destroy;
 begin
   FreeAndNil(f_BinaryReader);
   FreeAndNil(f_FileStream);
@@ -125,7 +125,7 @@ begin
   inherited;
 end;
 
-function TWaveReader.ReadBuffer(const a_pDest: PByte; const a_Count: Cardinal): Cardinal;
+function TJalWaveReader.ReadBuffer(const a_pDest: PByte; const a_Count: Cardinal): Cardinal;
 var
   l_Data: TBytes;
 begin

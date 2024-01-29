@@ -1,4 +1,4 @@
-unit JAT.CaptureAudioThread;
+unit JalCaptureAudioThread;
 
 interface
 
@@ -7,18 +7,18 @@ uses
   System.StrUtils, Winapi.Windows, Winapi.ActiveX, Winapi.MMSystem,
   Vcl.Forms,
 
-  JAT.Win.MMDeviceAPI, JAT.Win.AudioClient, JAT.AudioDevice;
+  Jal.Win.MMDeviceAPI, Jal.Win.AudioClient, JalAudioDevice;
 
 type
   TAudioType = (atMic, atSystem);
   TOnCaptureBuffer = procedure(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer) of object;
 
-  TCaptureAudioThread = class(TThread)
+  TJalCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
-    f_AudioDevice: TAudioDevice;
+    f_AudioDevice: TJalAudioDevice;
     f_AudioClient: IAudioClient;
     f_pWaveFormat: PWAVEFORMATEX;
     f_AudioCaptureClient: IAudioCaptureClient;
@@ -46,7 +46,7 @@ uses
 
 { TAudioStreamClientThread }
 
-constructor TCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX);
+constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX);
 begin
   f_AudioType := a_AudioType;
   f_pWaveFormat := a_pFormat;
@@ -55,7 +55,7 @@ begin
   inherited Create(False);
 end;
 
-destructor TCaptureAudioThread.Destroy;
+destructor TJalCaptureAudioThread.Destroy;
 begin
   if Assigned(f_AudioDevice) then
     FreeAndNil(f_AudioDevice);
@@ -63,7 +63,7 @@ begin
   inherited;
 end;
 
-function TCaptureAudioThread.StartCapture: Boolean;
+function TJalCaptureAudioThread.StartCapture: Boolean;
 var
   l_PointAudioClient: Pointer;
   l_StreamFlags: Cardinal;
@@ -110,7 +110,7 @@ begin
   end;
 end;
 
-procedure TCaptureAudioThread.Execute;
+procedure TJalCaptureAudioThread.Execute;
 var
   l_IncomingBufferSize: UInt32;
 
@@ -132,7 +132,7 @@ begin
   end;
 
   // Create Audio Device
-  f_AudioDevice := TAudioDevice.Create(COINIT_MULTITHREADED, l_DataFlow);
+  f_AudioDevice := TJalAudioDevice.Create(COINIT_MULTITHREADED, l_DataFlow);
 
   // Check ready device and start capture
   if (f_AudioDevice.Ready) and (StartCapture) then
