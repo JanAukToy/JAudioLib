@@ -66,7 +66,7 @@ end;
 function TJalCaptureAudioThread.StartCapture: Boolean;
 var
   l_PointAudioClient: Pointer;
-  l_StreamFlags: Cardinal;
+  l_StreamFlags: UInt64;
   l_BufferFrameCount: Cardinal;
   l_PointAudioCaptureClient: Pointer;
 begin
