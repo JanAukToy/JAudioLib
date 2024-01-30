@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Classes, Vcl.Forms, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Controls,
 
-  JalCaptureAudioThread, JalWaveWriter, Jal.Win.AudioClient;
+  JalCaptureAudioThread, JalWaveWriter, Jal.Win.AudioClient, Jal.Win.MMDeviceAPI;
 
 type
   TFormMain = class(TForm)
@@ -58,8 +58,7 @@ end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
-  if Assigned(f_CaptureAudioThread) then
-    f_CaptureAudioThread.Terminate;
+  btn_EndCaptureClick(Self);
 end;
 
 procedure TFormMain.OnIdleApplication(Sender: TObject; var Done: Boolean);
@@ -95,23 +94,37 @@ end;
 procedure TFormMain.btn_EndCaptureClick(Sender: TObject);
 begin
   if Assigned(f_CaptureAudioThread) then
+  begin
+    f_CaptureAudioThread.OnTerminate := nil;
     f_CaptureAudioThread.Terminate;
+    f_CaptureAudioThread.WaitFor;
+    FreeAndNil(f_CaptureAudioThread);
+  end;
+
+  if Assigned(f_WaveWriter) then
+    FreeAndNil(f_WaveWriter);
 end;
 
 procedure TFormMain.OnCaptureBuffer(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer);
 begin
-  // Write Buffer
-  f_WaveWriter.WriteBuffer(a_pData, a_Count);
+  if not a_Sender.CheckTerminated then
+  begin
+    // Write Buffer
+    f_WaveWriter.WriteBuffer(a_pData, a_Count);
+  end;
 end;
 
 procedure TFormMain.OnTerminate(Sender: TObject);
 begin
-  TThread.Queue(nil,
+  TThread.CreateAnonymousThread(
     procedure
     begin
-      FreeAndNil(f_WaveWriter);
-      f_CaptureAudioThread := nil;
-    end);
+      TThread.Synchronize(nil,
+        procedure
+        begin
+          btn_EndCaptureClick(Self);
+        end);
+    end).Start;
 end;
 
 end.

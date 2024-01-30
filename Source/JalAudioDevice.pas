@@ -48,11 +48,11 @@ type
     f_ContainerId: TGUID;
 
     // Endpoint Volume Props...
-    f_ChannelCount: Cardinal;
+    f_ChannelCount: DWORD;
     f_MasterLevel: Single;
     f_Mute: Boolean;
-    f_Step: Cardinal;
-    f_StepCount: Cardinal;
+    f_Step: DWORD;
+    f_StepCount: DWORD;
     f_Min: Single;
     f_Max: Single;
     f_Spin: Single;
@@ -83,11 +83,11 @@ type
     property InstanceId: string read f_InstanceId;
     property ContainerId: TGUID read f_ContainerId;
 
-    property ChannelCount: Cardinal read f_ChannelCount;
+    property ChannelCount: DWORD read f_ChannelCount;
     property MasterLevel: Single read f_MasterLevel write SetMasterLevel;
     property Mute: Boolean read f_Mute write SetMute;
-    property Step: Cardinal read f_Step;
-    property StepCount: Cardinal read f_StepCount;
+    property Step: DWORD read f_Step;
+    property StepCount: DWORD read f_StepCount;
     property Min: Single read f_Min;
     property Max: Single read f_Max;
     property Spin: Single read f_Spin;
@@ -170,7 +170,6 @@ end;
 function TJalAudioDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
 var
   l_Id: PWideChar;
-  l_PointAudioEndpointVolume: Pointer;
 begin
   Result := False;
 
@@ -189,12 +188,9 @@ begin
         // Get Device Properties
         if GetDeviceProps(f_PropertyStore) then
         begin
-          // Get Audio Endpoint Volume Pointer Interface
-          if Succeeded(f_Device.Activate(IID_IAudioEndpointVolume, CLSCTX_ALL, nil, l_PointAudioEndpointVolume)) then
+          // Get Audio Endpoint Volume
+          if Succeeded(f_Device.Activate(IID_IAudioEndpointVolume, CLSCTX_ALL, nil, f_AudioEndpointVolume)) then
           begin
-            // Cast to Audio Endpoint Volume
-            f_AudioEndpointVolume := IAudioEndpointVolume(l_PointAudioEndpointVolume) as IAudioEndpointVolume;
-
             // Create Volume Callback Handler
             f_VolumeCallbackHandler := TAudioEndpointVolumeCallbackHandler.Create(OnControlChangeNotify);
 
@@ -226,12 +222,12 @@ end;
 
 procedure TJalAudioDevice.SetMasterLevel(const a_Value: Single);
 begin
-  f_AudioEndpointVolume.SetMasterVolumeLevelScalar(a_Value, GUID_NULL);
+  f_AudioEndpointVolume.SetMasterVolumeLevelScalar(a_Value, nil);
 end;
 
 procedure TJalAudioDevice.SetMute(const a_Value: Boolean);
 begin
-  f_AudioEndpointVolume.SetMute(a_Value, GUID_NULL);
+  f_AudioEndpointVolume.SetMute(a_Value, nil);
 end;
 
 function TJalAudioDevice.GetDeviceProps(const a_PropertyStore: IPropertyStore): Boolean;
@@ -262,14 +258,14 @@ end;
 
 function TJalAudioDevice.GetAudioEndpointVolumeProps: Boolean;
 var
-  ii: Cardinal;
-  l_ChannelCount: Cardinal;
+  ii: DWORD;
+  l_ChannelCount: DWORD;
   l_MasterLevel: Single;
   l_ChannelLevel: Single;
   l_ChannelLevelList: TList<Single>;
   l_Mute: LongBool;
-  l_Step: Cardinal;
-  l_StepCount: Cardinal;
+  l_Step: DWORD;
+  l_StepCount: DWORD;
   l_Min: Single;
   l_Max: Single;
   l_Spin: Single;
@@ -277,11 +273,11 @@ begin
   Result := False;
 
   // Get All Properties
-  if (Succeeded(f_AudioEndpointVolume.GetChannelCount(l_ChannelCount))) and
-    (Succeeded(f_AudioEndpointVolume.GetMasterVolumeLevelScalar(l_MasterLevel))) and
-    (Succeeded(f_AudioEndpointVolume.GetMute(l_Mute))) and
-    (Succeeded(f_AudioEndpointVolume.GetVolumeStepInfo(l_Step, l_StepCount))) and
-    (Succeeded(f_AudioEndpointVolume.GetVolumeRange(l_Min, l_Max, l_Spin))) then
+  if (Succeeded(f_AudioEndpointVolume.GetChannelCount(@l_ChannelCount))) and
+    (Succeeded(f_AudioEndpointVolume.GetMasterVolumeLevelScalar(@l_MasterLevel))) and
+    (Succeeded(f_AudioEndpointVolume.GetMute(@l_Mute))) and
+    (Succeeded(f_AudioEndpointVolume.GetVolumeStepInfo(@l_Step, @l_StepCount))) and
+    (Succeeded(f_AudioEndpointVolume.GetVolumeRange(@l_Min, @l_Max, @l_Spin))) then
   begin
     l_ChannelLevelList := TList<Single>.Create;
 
@@ -289,7 +285,7 @@ begin
       // Get All Channel Volume
       for ii := 0 to l_ChannelCount - 1 do
       begin
-        if (Succeeded(f_AudioEndpointVolume.GetChannelVolumeLevelScalar(ii, l_ChannelLevel))) then
+        if (Succeeded(f_AudioEndpointVolume.GetChannelVolumeLevelScalar(ii, @l_ChannelLevel))) then
         begin
           // Add Value
           l_ChannelLevelList.Add(l_ChannelLevel);
@@ -297,7 +293,7 @@ begin
       end;
 
       // Check Get All Channel Result
-      if l_ChannelCount = Cardinal(l_ChannelLevelList.Count) then
+      if l_ChannelCount = DWORD(l_ChannelLevelList.Count) then
       begin
         // Store Properties
         f_ChannelCount := l_ChannelCount;

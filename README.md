@@ -10,7 +10,7 @@ Primarily use Windows WASAPI.
 ## Confirmed Environment
 
 * IDE: Delphi11.3
-* Platforms: Win64
+* Platforms: Win64 / Win32
 
 ## Features
 

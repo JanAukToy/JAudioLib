@@ -19,6 +19,7 @@ type
     AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR = $00000004);
 {$MINENUMSIZE 1}
   REFERENCE_TIME = Int64;
+  PREFERENCE_TIME = ^REFERENCE_TIME;
 
   PIAudioClient = ^IAudioClient;
 
@@ -36,45 +37,37 @@ type
 
   WAVEFORMATEX = tWAVEFORMATEX;
 
-  ISimpleAudioVolume = interface(IUnknown)
-    ['{87CE5498-68D6-44E5-9215-6DA47EF883D8}']
-    function SetMasterVolume(fLevel: Single; EventContext: TGUID): HRESULT; stdcall;
-    function GetMasterVolume(out pfLevel: Single): HRESULT; stdcall;
-    function SetMute(const bMute: BOOL; EventContext: TGUID): HRESULT; stdcall;
-    function GetMute(out pbMute: BOOL): HRESULT; stdcall;
-  end;
-
   IAudioClient = interface(IUnknown)
     ['{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}']
-    function Initialize(ShareMode: _AUDCLNT_SHAREMODE; StreamFlags: DWORD; hnsBufferDuration: REFERENCE_TIME;
-      hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEX; AudioSessionGuid: TGUID): HRESULT; stdcall;
-    function GetBufferSize(out pNumBufferFrames: UINT32): HRESULT; stdcall;
-    function GetStreamLatency(out phnsLatency: REFERENCE_TIME): HRESULT; stdcall;
-    function GetCurrentPadding(out pNumPaddingFrames: UINT32): HRESULT; stdcall;
+    function Initialize(ShareMode: AUDCLNT_SHAREMODE; StreamFlags: DWORD; hnsBufferDuration: REFERENCE_TIME;
+      hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEX; const AudioSessionGuid: PGUID): HRESULT; stdcall;
+    function GetBufferSize(pNumBufferFrames: PUInt32): HRESULT; stdcall;
+    function GetStreamLatency(phnsLatency: PREFERENCE_TIME): HRESULT; stdcall;
+    function GetCurrentPadding(pNumPaddingFrames: PUInt32): HRESULT; stdcall;
     function IsFormatSupported(ShareMode: AUDCLNT_SHAREMODE; const pFormat: PWAVEFORMATEX;
       out ppClosestMatch: PWAVEFORMATEX): HRESULT; stdcall;
     function GetMixFormat(out ppDeviceFormat: PWAVEFORMATEX): HRESULT; stdcall;
-    function GetDevicePeriod(out phnsDefaultDevicePeriod: REFERENCE_TIME; out phnsMinimumDevicePeriod: REFERENCE_TIME)
+    function GetDevicePeriod(phnsDefaultDevicePeriod: PREFERENCE_TIME; phnsMinimumDevicePeriod: PREFERENCE_TIME)
       : HRESULT; stdcall;
     function Start(): HRESULT; stdcall;
     function Stop(): HRESULT; stdcall;
     function Reset(): HRESULT; stdcall;
     function SetEventHandle(eventHandle: THandle): HRESULT; stdcall;
-    function GetService(const riid: TGUID; out ppv: Pointer): HRESULT; stdcall;
+    function GetService(const riid: TGUID; out ppv): HRESULT; stdcall;
   end;
 
   IAudioRenderClient = interface(IUnknown)
     ['{F294ACFC-3146-4483-A7BF-ADDCA7C260E2}']
-    function GetBuffer(NumFramesRequested: UINT32; out ppData: PBYTE): HRESULT; stdcall;
-    function ReleaseBuffer(NumFramesWritten: UINT32; dwFlags: DWORD): HRESULT; stdcall;
+    function GetBuffer(NumFramesRequested: UInt32; out ppData: PBYTE): HRESULT; stdcall;
+    function ReleaseBuffer(NumFramesWritten: UInt32; dwFlags: DWORD): HRESULT; stdcall;
   end;
 
   IAudioCaptureClient = interface(IUnknown)
     ['{C8ADBD64-E71E-48a0-A4DE-185C395CD317}']
-    function GetBuffer(out ppData: PBYTE; out pNumFramesToRead: UINT32; out pdwFlags: DWORD;
-      out pu64DevicePosition: UINT64; out pu64QPCPosition: UINT64): HRESULT; stdcall;
-    function ReleaseBuffer(NumFramesRead: UINT32): HRESULT; stdcall;
-    function GetNextPacketSize(out pNumFramesInNextPacket: UINT32): HRESULT; stdcall;
+    function GetBuffer(out ppData: PBYTE; pNumFramesToRead: PUInt32; pdwFlags: PDWORD; pu64DevicePosition: PUInt64;
+      pu64QPCPosition: PUInt64): HRESULT; stdcall;
+    function ReleaseBuffer(NumFramesRead: UInt32): HRESULT; stdcall;
+    function GetNextPacketSize(pNumFramesInNextPacket: PUInt32): HRESULT; stdcall;
   end;
 
 implementation

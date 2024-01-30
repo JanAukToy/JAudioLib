@@ -22,7 +22,7 @@ type
     function OnDeviceAdded(pwstrDeviceId: PWideChar): HResult; stdcall;
     function OnDeviceRemoved(pwstrDeviceId: PWideChar): HResult; stdcall;
     function OnDeviceStateChanged(pwstrDeviceId: PWideChar; dwNewState: DWORD): HResult; stdcall;
-    function OnPropertyValueChanged(pwstrDeviceId: PWideChar; const key: PROPERTYKEY): HResult; stdcall;
+    function OnPropertyValueChanged(pwstrDeviceId: PWideChar; key: PROPERTYKEY): HResult; stdcall;
   end;
 
 implementation
@@ -65,7 +65,7 @@ begin
   Result := S_OK;
 end;
 
-function TJalNotificationClient.OnPropertyValueChanged(pwstrDeviceId: PWideChar; const key: PROPERTYKEY): HResult;
+function TJalNotificationClient.OnPropertyValueChanged(pwstrDeviceId: PWideChar; key: PROPERTYKEY): HResult;
 begin
   Result := S_OK;
 end;

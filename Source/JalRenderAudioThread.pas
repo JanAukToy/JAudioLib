@@ -61,32 +61,26 @@ end;
 
 function TJalRenderAudioThread.StartRender: Boolean;
 var
-  l_PointAudioClient: Pointer;
-  l_PointAudioRenderClient: Pointer;
   l_pBuffer: PByte;
 begin
   Result := False;
 
   // Get Audio Client
-  if Succeeded(f_AudioDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, l_PointAudioClient)) then
+  if Succeeded(f_AudioDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, f_AudioClient)) then
   begin
-    f_AudioClient := IAudioClient(l_PointAudioClient) as IAudioClient;
-
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
-      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, f_pWaveFormat, TGuid.Empty)) then
+      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, f_pWaveFormat, nil)) then
     begin
       // Get buffer size
-      if Succeeded(f_AudioClient.GetBufferSize(f_BufferFrameCount)) then
+      if Succeeded(f_AudioClient.GetBufferSize(@f_BufferFrameCount)) then
       begin
         // Get Duration
         f_ActualDuration := Round(REFTIMES_PER_SEC * f_BufferFrameCount / f_pWaveFormat.nSamplesPerSec);
 
         // Get Audio Render Client
-        if Succeeded(f_AudioClient.GetService(IID_IAudioRenderClient, l_PointAudioRenderClient)) then
+        if Succeeded(f_AudioClient.GetService(IID_IAudioRenderClient, f_AudioRenderClient)) then
         begin
-          f_AudioRenderClient := IAudioCaptureClient(l_PointAudioRenderClient) as IAudioRenderClient;
-
           // Destoroy initial buffer
           if Succeeded(f_AudioRenderClient.GetBuffer(f_BufferFrameCount, l_pBuffer)) then
           begin
@@ -121,7 +115,7 @@ begin
       TThread.Sleep(Round(f_ActualDuration / REFTIMES_PER_MSEC / 2));
 
       // See how much buffer space is available
-      if Succeeded(f_AudioClient.GetCurrentPadding(l_NumFramesPadding)) then
+      if Succeeded(f_AudioClient.GetCurrentPadding(@l_NumFramesPadding)) then
       begin
         l_NumFramesAvailable := f_BufferFrameCount - l_NumFramesPadding;
 

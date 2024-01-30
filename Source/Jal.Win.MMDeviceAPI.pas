@@ -46,11 +46,13 @@ type
   ERole = (eConsole = $00000000, eMultimedia = $00000001, eCommunications = $00000002, ERole_enum_count = $00000003);
 {$MINENUMSIZE 1}
   PPROPVARIANT = ^PROPVARIANT;
-  PIMMDevice = ^IMMDevice;
+
+  PIMMDeviceCollection = ^IMMDeviceCollection;
+  PIMMNotificationClient = ^IMMNotificationClient;
 
   IMMDevice = interface(IUnknown)
     ['{D666063F-1587-4E43-81F1-B948E807363F}']
-    function Activate(const iid: TGUID; dwClsCtx: DWORD; pActivationParams: PPROPVARIANT; out ppInterface: Pointer)
+    function Activate(const iid: TGUID; dwClsCtx: DWORD; pActivationParams: PPROPVARIANT; out ppInterface)
       : HRESULT; stdcall;
     function OpenPropertyStore(stgmAccess: DWORD; out ppProperties: IPropertyStore): HRESULT; stdcall;
     function GetId(out ppstrId: PWideChar): HRESULT; stdcall;
@@ -59,8 +61,8 @@ type
 
   IMMDeviceCollection = interface(IUnknown)
     ['{0BD7A1BE-7A1A-44DB-8397-CC5392387B5E}']
-    function GetCount(out pcDevices: UINT): HRESULT; stdcall;
-    function Item(nDevice: UINT; out ppDevice: IMMDevice): HRESULT; stdcall;
+    function GetCount(pcDevices: PDWORD): HRESULT; stdcall;
+    function Item(nDevice: DWORD; out ppDevice: IMMDevice): HRESULT; stdcall;
   end;
 
   IMMNotificationClient = interface(IUnknown)
@@ -69,7 +71,7 @@ type
     function OnDeviceAdded(pwstrDeviceId: PWideChar): HRESULT; stdcall;
     function OnDeviceRemoved(pwstrDeviceId: PWideChar): HRESULT; stdcall;
     function OnDefaultDeviceChanged(flow: EDataFlow; role: ERole; pwstrDefaultDeviceId: PWideChar): HRESULT; stdcall;
-    function OnPropertyValueChanged(pwstrDeviceId: PWideChar; const key: PROPERTYKEY): HRESULT; stdcall;
+    function OnPropertyValueChanged(pwstrDeviceId: PWideChar; key: PROPERTYKEY): HRESULT; stdcall;
   end;
 
   IMMDeviceEnumerator = interface(IUnknown)
