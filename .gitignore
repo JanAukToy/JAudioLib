@@ -69,5 +69,5 @@ __recovery/
 modules/
 
 # Binary file folder
-Win32/
-Win64/
+*Win32/
+*Win64/
