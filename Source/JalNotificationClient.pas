@@ -13,9 +13,13 @@ type
 
   TJalNotificationClient = class(TInterfacedObject, IMMNotificationClient)
   private
+    f_DeviceId: string;
+    f_Flow: EDataFlow;
+    f_Role: ERole;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
   public
-    constructor Create(const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged);
+    constructor Create(const a_DeviceId: string; const a_Flow: EDataFlow; const a_Role: ERole;
+      const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged);
     destructor Destroy; override;
 
     function OnDefaultDeviceChanged(flow: EDataFlow; role: ERole; pwstrDefaultDeviceId: PWideChar): HResult; stdcall;
@@ -29,9 +33,13 @@ implementation
 
 { TNotificationClient }
 
-constructor TJalNotificationClient.Create(const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged);
+constructor TJalNotificationClient.Create(const a_DeviceId: string; const a_Flow: EDataFlow; const a_Role: ERole;
+  const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged);
 begin
-  f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged; // Store Callback
+  f_DeviceId := a_DeviceId;
+  f_Flow := a_Flow;
+  f_Role := a_Role;
+  f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
 end;
 
 destructor TJalNotificationClient.Destroy;
@@ -42,7 +50,8 @@ end;
 function TJalNotificationClient.OnDefaultDeviceChanged(flow: EDataFlow; role: ERole;
   pwstrDefaultDeviceId: PWideChar): HResult;
 begin
-  if Assigned(f_OnDefaultDeviceChanged) then
+  if (Assigned(f_OnDefaultDeviceChanged))  and (flow = f_Flow) and (role = f_Role)
+  then
   begin
     f_OnDefaultDeviceChanged(flow, role, pwstrDefaultDeviceId); // Callback
   end;

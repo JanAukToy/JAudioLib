@@ -5,9 +5,8 @@ interface
 uses
   System.SysUtils, System.Classes, System.Win.ComObj, System.SyncObjs,
   System.StrUtils, Winapi.Windows, Winapi.ActiveX, Winapi.MMSystem,
-  Vcl.Forms,
 
-  Jal.Win.MMDeviceAPI, Jal.Win.AudioClient, JalAudioDevice;
+  Jal.Win.MMDeviceAPI, Jal.Win.AudioClient, JalAudioDevice, JalNotificationClient;
 
 type
   TAudioType = (atMic, atSystem);
@@ -16,6 +15,7 @@ type
   TJalCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
+    f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
     f_AudioDevice: TJalAudioDevice;
@@ -26,7 +26,8 @@ type
 
     function StartCapture: Boolean;
   public
-    constructor Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX);
+    constructor Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX;
+      const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
     property OnCaptureBuffer: TOnCaptureBuffer write f_OnCaptureBuffer;
@@ -46,10 +47,12 @@ uses
 
 { TAudioStreamClientThread }
 
-constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX);
+constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX;
+  const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
   f_pWaveFormat := a_pFormat;
+  f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
 
   FreeOnTerminate := False;
   inherited Create(False);
@@ -125,7 +128,7 @@ begin
   end;
 
   // Create Audio Device
-  f_AudioDevice := TJalAudioDevice.Create(COINIT_MULTITHREADED, l_DataFlow);
+  f_AudioDevice := TJalAudioDevice.Create(COINIT_MULTITHREADED, l_DataFlow, f_OnDefaultDeviceChanged);
 
   // Check ready device and start capture
   if (f_AudioDevice.Ready) and (StartCapture) then

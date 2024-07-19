@@ -35,6 +35,7 @@ type
     f_WaveWriter: TJalWaveWriter;
 
     procedure OnIdleApplication(Sender: TObject; var Done: Boolean);
+    procedure OnDefaultDeviceChanged(const a_Flow: EDataFlow; const a_Role: ERole; const a_DeviceId: PWideChar);
     procedure OnCaptureBuffer(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer);
     procedure OnTerminate(Sender: TObject);
   public
@@ -84,7 +85,8 @@ begin
     [l_Format.nChannels, l_Format.nSamplesPerSec, l_Format.wBitsPerSample]), l_Format);
 
   // Create Capture Thread
-  f_CaptureAudioThread := TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), @f_WaveWriter.Format);
+  f_CaptureAudioThread := TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), @f_WaveWriter.Format,
+    OnDefaultDeviceChanged);
 
   // Assign Handlers
   f_CaptureAudioThread.OnCaptureBuffer := OnCaptureBuffer;
@@ -103,6 +105,19 @@ begin
 
   if Assigned(f_WaveWriter) then
     FreeAndNil(f_WaveWriter);
+end;
+
+procedure TFormMain.OnDefaultDeviceChanged(const a_Flow: EDataFlow; const a_Role: ERole; const a_DeviceId: PWideChar);
+begin
+//  TThread.CreateAnonymousThread(
+//    procedure
+//    begin
+      TThread.Queue(nil,
+        procedure
+        begin
+          btn_EndCaptureClick(Self);
+        end);
+//    end).Start;
 end;
 
 procedure TFormMain.OnCaptureBuffer(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer);

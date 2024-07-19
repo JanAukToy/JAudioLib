@@ -35,6 +35,8 @@ type
 
     // Device Emurator...
     f_DeviceEnumerator: IMMDeviceEnumerator;
+    f_DataFlow: EDataFlow;
+    f_Role: ERole;
     f_NotificationClient: TJalNotificationClient;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
 
@@ -44,7 +46,7 @@ type
     f_InterfaceFriendlyName: string;
     f_DeviceDesc: string;
     f_FriendlyName: string;
-    f_InstanceId: string;
+    f_DeviceId: string;
     f_ContainerId: TGUID;
 
     // Endpoint Volume Props...
@@ -60,8 +62,8 @@ type
     f_OnChangeMasterLevel: TOnChangeMasterLevel;
     f_OnChangeMute: TOnChangeMute;
 
-    function InitEmurator(const a_CoInitFlag: Integer): Boolean;
-    function InitDevice(const a_DataFlowType: EDataFlow): Boolean;
+    function InitEmurator(const a_CoInitFlag: Integer; const a_DataFlowType: EDataFlow; const a_Role: ERole): Boolean;
+    function InitDevice(const a_DataFlowType: EDataFlow; const a_Role: ERole): Boolean;
 
     procedure SetDeviceDesc(const a_Value: string);
     procedure SetMasterLevel(const a_Value: Single);
@@ -71,7 +73,8 @@ type
     function GetAudioEndpointVolumeProps(): Boolean;
     procedure OnControlChangeNotify(const a_Data: AUDIO_VOLUME_NOTIFICATION_DATA);
   public
-    constructor Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
+    constructor Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow;
+      const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
     property Ready: Boolean read f_Ready;
@@ -80,7 +83,7 @@ type
 
     property DeviceDesc: string read f_DeviceDesc write SetDeviceDesc;
     property FriendlyName: string read f_FriendlyName;
-    property InstanceId: string read f_InstanceId;
+    property DeviceId: string read f_DeviceId;
     property ContainerId: TGUID read f_ContainerId;
 
     property ChannelCount: DWORD read f_ChannelCount;
@@ -121,10 +124,15 @@ end;
 
 { TAudioStreamDevice }
 
-constructor TJalAudioDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow);
+constructor TJalAudioDevice.Create(const a_CoInitFlag: Longint; const a_DataFlowType: EDataFlow;
+  const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
+  f_DataFlow := a_DataFlowType;
+  f_Role := eConsole;
+  f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
+
   // Init Emurator and Init Device
-  f_Ready := InitEmurator(a_CoInitFlag) and InitDevice(a_DataFlowType);
+  f_Ready := InitEmurator(a_CoInitFlag, f_DataFlow, f_Role) and InitDevice(f_DataFlow, f_Role);
 end;
 
 destructor TJalAudioDevice.Destroy;
@@ -151,54 +159,56 @@ begin
   inherited;
 end;
 
-function TJalAudioDevice.InitEmurator(const a_CoInitFlag: Integer): Boolean;
+function TJalAudioDevice.InitEmurator(const a_CoInitFlag: Integer; const a_DataFlowType: EDataFlow;
+  const a_Role: ERole): Boolean;
 begin
   Result := False;
 
   // Init COM
-  if (Succeeded(CoInitializeEx(nil, a_CoInitFlag))) and // Get DeviceEnumerator
+  Result := (Succeeded(CoInitializeEx(nil, a_CoInitFlag))) and // Get DeviceEnumerator
     (Succeeded(CoCreateInstance(CLSID_IMMDeviceEnumerator, nil, CLSCTX_ALL, IID_IMMDeviceEnumerator,
-    f_DeviceEnumerator))) then
-  begin
-    f_NotificationClient := TJalNotificationClient.Create(f_OnDefaultDeviceChanged);
-
-    // Register Notification Client
-    Result := Succeeded(f_DeviceEnumerator.RegisterEndpointNotificationCallback(f_NotificationClient));
-  end;
+    f_DeviceEnumerator)));
 end;
 
-function TJalAudioDevice.InitDevice(const a_DataFlowType: EDataFlow): Boolean;
+function TJalAudioDevice.InitDevice(const a_DataFlowType: EDataFlow; const a_Role: ERole): Boolean;
 var
   l_Id: PWideChar;
 begin
   Result := False;
 
   // Get Device
-  if Succeeded(f_DeviceEnumerator.GetDefaultAudioEndpoint(a_DataFlowType, eConsole, f_Device)) then
+  if Succeeded(f_DeviceEnumerator.GetDefaultAudioEndpoint(a_DataFlowType, a_Role, f_Device)) then
   begin
     // Get Device ID
     if Succeeded(f_Device.GetId(l_Id)) then
     begin
       // Store ID
-      f_InstanceId := l_Id;
+      f_DeviceId := l_Id;
 
-      // Get Open Property Interface
-      if Succeeded(f_Device.OpenPropertyStore(STGM_READWRITE, f_PropertyStore)) then
+      f_NotificationClient := TJalNotificationClient.Create(f_DeviceId, a_DataFlowType, a_Role,
+        f_OnDefaultDeviceChanged);
+
+      // Register Notification Client
+      if Succeeded(f_DeviceEnumerator.RegisterEndpointNotificationCallback(f_NotificationClient)) then
       begin
-        // Get Device Properties
-        if GetDeviceProps(f_PropertyStore) then
+        // Get Open Property Interface
+        if Succeeded(f_Device.OpenPropertyStore(STGM_READWRITE, f_PropertyStore)) then
         begin
-          // Get Audio Endpoint Volume
-          if Succeeded(f_Device.Activate(IID_IAudioEndpointVolume, CLSCTX_ALL, nil, f_AudioEndpointVolume)) then
+          // Get Device Properties
+          if GetDeviceProps(f_PropertyStore) then
           begin
-            // Create Volume Callback Handler
-            f_VolumeCallbackHandler := TAudioEndpointVolumeCallbackHandler.Create(OnControlChangeNotify);
-
-            // Register Volume Callback Handler
-            if Succeeded(f_AudioEndpointVolume.RegisterControlChangeNotify(f_VolumeCallbackHandler)) then
+            // Get Audio Endpoint Volume
+            if Succeeded(f_Device.Activate(IID_IAudioEndpointVolume, CLSCTX_ALL, nil, f_AudioEndpointVolume)) then
             begin
-              // Get Audio Endpoint Volume Properties
-              Result := GetAudioEndpointVolumeProps;
+              // Create Volume Callback Handler
+              f_VolumeCallbackHandler := TAudioEndpointVolumeCallbackHandler.Create(OnControlChangeNotify);
+
+              // Register Volume Callback Handler
+              if Succeeded(f_AudioEndpointVolume.RegisterControlChangeNotify(f_VolumeCallbackHandler)) then
+              begin
+                // Get Audio Endpoint Volume Properties
+                Result := GetAudioEndpointVolumeProps;
+              end;
             end;
           end;
         end;
