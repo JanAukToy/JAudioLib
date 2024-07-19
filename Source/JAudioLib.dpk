@@ -1,0 +1,45 @@
+package JAudioLib;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION OFF}
+{$OVERFLOWCHECKS ON}
+{$RANGECHECKS ON}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES ON}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE DEBUG}
+{$ENDIF IMPLICITBUILDING}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl;
+
+contains
+  Jal.Win.AudioClient in 'Jal.Win.AudioClient.pas',
+  Jal.Win.EndpointVolume in 'Jal.Win.EndpointVolume.pas',
+  Jal.Win.MMDeviceAPI in 'Jal.Win.MMDeviceAPI.pas',
+  JalAudioDevice in 'JalAudioDevice.pas',
+  JalCaptureAudioThread in 'JalCaptureAudioThread.pas',
+  JalNotificationClient in 'JalNotificationClient.pas',
+  JalRenderAudioThread in 'JalRenderAudioThread.pas',
+  JalWaveHelper in 'JalWaveHelper.pas',
+  JalWaveReader in 'JalWaveReader.pas',
+  JalWaveWriter in 'JalWaveWriter.pas';
+
+end.
