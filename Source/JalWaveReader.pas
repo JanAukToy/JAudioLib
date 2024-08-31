@@ -35,7 +35,6 @@ constructor TJalWaveReader.Create(const a_DirFileName: string);
 var
   l_RIFF: TArray<Char>;
   l_RIFFStr: string;
-  l_ChunkSize: Cardinal;
   l_Format: TArray<Char>;
   l_FormatStr: string;
   l_FmtIdent: TArray<Char>;
@@ -43,7 +42,6 @@ var
   l_FmtSize: Cardinal;
   l_DataIdent: TArray<Char>;
   l_DataIdentStr: string;
-  l_DataSize: Cardinal;
 begin
   f_Available := False;
 
@@ -54,7 +52,6 @@ begin
   try
     // Read Headers...
     l_RIFF := f_BinaryReader.ReadChars(4);
-    l_ChunkSize := f_BinaryReader.ReadCardinal;
     l_Format := f_BinaryReader.ReadChars(4);
 
     SetString(l_RIFFStr, PChar(l_RIFF), Length(l_RIFF));
@@ -89,7 +86,6 @@ begin
 
           // Read Data chunk
           l_DataIdent := f_BinaryReader.ReadChars(4);
-          l_DataSize := f_BinaryReader.ReadCardinal;
 
           SetString(l_DataIdentStr, PChar(l_DataIdent), Length(l_DataIdent));
 
