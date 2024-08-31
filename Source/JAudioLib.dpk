@@ -28,7 +28,8 @@ package JAudioLib;
 {$IMPLICITBUILD ON}
 
 requires
-  rtl;
+  rtl,
+  vcl;
 
 contains
   Jal.Win.AudioClient in 'Jal.Win.AudioClient.pas',
