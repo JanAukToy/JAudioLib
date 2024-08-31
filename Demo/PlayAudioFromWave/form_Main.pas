@@ -86,12 +86,20 @@ begin
     // Create Wave Reader
     f_WaveReader := TJalWaveReader.Create(edt_DirWaveFile.Text);
 
-    if f_WaveReader.Available then
-    begin
-      // Create Render Thread
-      f_RenderAudioThread := TJalRenderAudioThread.Create(f_WaveReader.Format);
-      f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
-      f_RenderAudioThread.OnTerminate := OnTerminate;
+    try
+      if f_WaveReader.Available then
+      begin
+        // Create Render Thread
+        f_RenderAudioThread := TJalRenderAudioThread.Create(f_WaveReader.Format);
+        f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
+        f_RenderAudioThread.OnTerminate := OnTerminate;
+      end;
+
+    finally
+      if not f_WaveReader.Available then
+      begin
+        FreeAndNil(f_WaveReader);
+      end;
     end;
   end;
 end;
@@ -104,6 +112,11 @@ begin
     f_RenderAudioThread.Terminate;
     f_RenderAudioThread.WaitFor;
     FreeAndNil(f_RenderAudioThread);
+  end;
+
+  if Assigned(f_WaveReader) then
+  begin
+    FreeAndNil(f_WaveReader);
   end;
 end;
 
