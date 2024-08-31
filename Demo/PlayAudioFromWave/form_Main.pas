@@ -47,6 +47,7 @@ uses
 
 {$R *.dfm}
 
+
 procedure TFormMain.FormCreate(Sender: TObject);
 begin
   Application.OnIdle := OnIdleApplication;
@@ -55,7 +56,9 @@ end;
 procedure TFormMain.FormDestroy(Sender: TObject);
 begin
   if Assigned(f_RenderAudioThread) then
+  begin
     f_RenderAudioThread.Terminate;
+  end;
 end;
 
 procedure TFormMain.OnIdleApplication(Sender: TObject; var Done: Boolean);
@@ -83,12 +86,20 @@ begin
     // Create Wave Reader
     f_WaveReader := TJalWaveReader.Create(edt_DirWaveFile.Text);
 
-    if f_WaveReader.Available then
-    begin
-      // Create Render Thread
-      f_RenderAudioThread := TJalRenderAudioThread.Create(@f_WaveReader.Format);
-      f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
-      f_RenderAudioThread.OnTerminate := OnTerminate;
+    try
+      if f_WaveReader.Available then
+      begin
+        // Create Render Thread
+        f_RenderAudioThread := TJalRenderAudioThread.Create(f_WaveReader.Format);
+        f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
+        f_RenderAudioThread.OnTerminate := OnTerminate;
+      end;
+
+    finally
+      if not f_WaveReader.Available then
+      begin
+        FreeAndNil(f_WaveReader);
+      end;
     end;
   end;
 end;
@@ -96,7 +107,17 @@ end;
 procedure TFormMain.btn_EndPlayClick(Sender: TObject);
 begin
   if Assigned(f_RenderAudioThread) then
+  begin
+    f_RenderAudioThread.OnTerminate := nil;
     f_RenderAudioThread.Terminate;
+    f_RenderAudioThread.WaitFor;
+    FreeAndNil(f_RenderAudioThread);
+  end;
+
+  if Assigned(f_WaveReader) then
+  begin
+    FreeAndNil(f_WaveReader);
+  end;
 end;
 
 procedure TFormMain.OnRenderBuffer(const a_Sender: TThread; const a_pData: PByte; const a_AvailableCount: Cardinal;
@@ -117,12 +138,16 @@ end;
 
 procedure TFormMain.OnTerminate(Sender: TObject);
 begin
-  TThread.Queue(nil,
+  TThread.CreateAnonymousThread(
     procedure
     begin
-      FreeAndNil(f_WaveReader);
-      f_RenderAudioThread := nil;
-    end);
+      TThread.Queue(nil,
+        procedure
+        begin
+          btn_EndPlayClick(Self);
+        end);
+    end
+    ).Start;
 end;
 
 end.

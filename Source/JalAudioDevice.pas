@@ -162,8 +162,6 @@ end;
 function TJalAudioDevice.InitEmurator(const a_CoInitFlag: Integer; const a_DataFlowType: EDataFlow;
   const a_Role: ERole): Boolean;
 begin
-  Result := False;
-
   // Init COM
   Result := (Succeeded(CoInitializeEx(nil, a_CoInitFlag))) and // Get DeviceEnumerator
     (Succeeded(CoCreateInstance(CLSID_IMMDeviceEnumerator, nil, CLSCTX_ALL, IID_IMMDeviceEnumerator,

@@ -35,7 +35,7 @@ begin
 
   // Create Streams
   f_FileStream := TFileStream.Create(a_DirFileName, fmCreate);
-  f_BinaryWriter := TBinaryWriter.Create(f_FileStream);
+  f_BinaryWriter := TBinaryWriter.Create(f_FileStream, TEncoding.ASCII);
 
   // Write Headers
   f_BinaryWriter.Write('RIFF'.ToCharArray);
@@ -58,8 +58,6 @@ end;
 
 destructor TJalWaveWriter.Destroy;
 begin
-  Close;
-
   FreeAndNil(f_BinaryWriter);
   FreeAndNil(f_FileStream);
 

@@ -20,13 +20,13 @@ type
 
     f_AudioDevice: TJalAudioDevice;
     f_AudioClient: IAudioClient;
-    f_pWaveFormat: PWAVEFORMATEX;
+    f_WaveFormat: WAVEFORMATEX;
     f_AudioCaptureClient: IAudioCaptureClient;
     f_ActualDuration: REFERENCE_TIME;
 
     function StartCapture: Boolean;
   public
-    constructor Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX;
+    constructor Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
       const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
@@ -47,11 +47,11 @@ uses
 
 { TAudioStreamClientThread }
 
-constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_pFormat: PWAVEFORMATEX;
+constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
   const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
-  f_pWaveFormat := a_pFormat;
+  f_WaveFormat := a_Format;
   f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
 
   FreeOnTerminate := False;
@@ -87,14 +87,14 @@ begin
     end;
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
-    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, f_pWaveFormat,
+    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @f_WaveFormat,
       nil)) then
     begin
       // Get Buffer Size
       if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
       begin
         // Get Duration
-        f_ActualDuration := Round(REFTIMES_PER_SEC * l_BufferFrameCount / f_pWaveFormat.nSamplesPerSec);
+        f_ActualDuration := Round(REFTIMES_PER_SEC * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec);
 
         // Get Audio Capture Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, f_AudioCaptureClient)) then
@@ -158,7 +158,7 @@ begin
 
             if (l_pBuffer <> nil) and (l_NumFramesAvailable > 0) then
             begin
-              l_IncomingBufferSize := f_pWaveFormat.nBlockAlign * l_NumFramesAvailable;
+              l_IncomingBufferSize := f_WaveFormat.nBlockAlign * l_NumFramesAvailable;
 
               // Callback Capture Buffer
               if Assigned(f_OnCaptureBuffer) then

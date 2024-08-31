@@ -43,13 +43,12 @@ var
   l_FmtSize: Cardinal;
   l_DataIdent: TArray<Char>;
   l_DataIdentStr: string;
-  l_DataSize: Cardinal;
 begin
   f_Available := False;
 
   // Create Streams
   f_FileStream := TFileStream.Create(a_DirFileName, fmOpenRead);
-  f_BinaryReader := TBinaryReader.Create(f_FileStream);
+  f_BinaryReader := TBinaryReader.Create(f_FileStream, TEncoding.ASCII);
 
   try
     // Read Headers...
@@ -89,7 +88,6 @@ begin
 
           // Read Data chunk
           l_DataIdent := f_BinaryReader.ReadChars(4);
-          l_DataSize := f_BinaryReader.ReadCardinal;
 
           SetString(l_DataIdentStr, PChar(l_DataIdent), Length(l_DataIdent));
 
@@ -100,13 +98,14 @@ begin
         end;
       end
       // Extensible
-      else if f_Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE then
-      begin
-        // Read extension block...
-        f_Format.cbSize := f_BinaryReader.ReadWord;
+      else
+        if f_Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE then
+        begin
+          // Read extension block...
+          f_Format.cbSize := f_BinaryReader.ReadWord;
 
-        { TODO : Support for WAVEFORMATEXTENSIBLE format }
-      end;
+          { TODO : Support for WAVEFORMATEXTENSIBLE format }
+        end;
     end;
 
   except
