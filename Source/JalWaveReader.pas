@@ -96,13 +96,14 @@ begin
         end;
       end
       // Extensible
-      else if f_Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE then
-      begin
-        // Read extension block...
-        f_Format.cbSize := f_BinaryReader.ReadWord;
+      else
+        if f_Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE then
+        begin
+          // Read extension block...
+          f_Format.cbSize := f_BinaryReader.ReadWord;
 
-        { TODO : Support for WAVEFORMATEXTENSIBLE format }
-      end;
+          { TODO : Support for WAVEFORMATEXTENSIBLE format }
+        end;
     end;
 
   except
