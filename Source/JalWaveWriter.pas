@@ -58,8 +58,6 @@ end;
 
 destructor TJalWaveWriter.Destroy;
 begin
-  Close;
-
   FreeAndNil(f_BinaryWriter);
   FreeAndNil(f_FileStream);
 
