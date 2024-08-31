@@ -86,7 +86,7 @@ begin
     if f_WaveReader.Available then
     begin
       // Create Render Thread
-      f_RenderAudioThread := TJalRenderAudioThread.Create(@f_WaveReader.Format);
+      f_RenderAudioThread := TJalRenderAudioThread.Create(f_WaveReader.Format);
       f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
       f_RenderAudioThread.OnTerminate := OnTerminate;
     end;
