@@ -47,7 +47,7 @@ constructor TJalRenderAudioThread.Create(const a_Format: WAVEFORMATEX);
 begin
   f_WaveFormat := a_Format;
 
-  FreeOnTerminate := True;
+  FreeOnTerminate := False;
   inherited Create(False);
 end;
 
