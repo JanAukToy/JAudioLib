@@ -26,7 +26,7 @@ type
 
     function StartRender: Boolean;
   public
-    constructor Create(const a_Format: WAVEFORMATEX);
+    constructor Create(const a_Format: WAVEFORMATEX; const a_DelayMs: Cardinal = 0);
     destructor Destroy; override;
 
     property OnRenderBuffer: TOnRenderBuffer write f_OnRenderBuffer;
@@ -36,16 +36,17 @@ type
 
 const
   // 1 REFTIMES = 100 nano sec
-  REFTIMES_PER_SEC: REFERENCE_TIME = 10000000; // REFTIMES to Sec
-  REFTIMES_PER_MSEC: REFERENCE_TIME = 10000; // REFTIMES to MSec
+  REFTIMES_PER_SEC: REFERENCE_TIME  = 10000000; // REFTIMES to Sec
+  REFTIMES_PER_MSEC: REFERENCE_TIME = 10000;    // REFTIMES to MSec
 
 implementation
 
 { TRenderAudioThread }
 
-constructor TJalRenderAudioThread.Create(const a_Format: WAVEFORMATEX);
+constructor TJalRenderAudioThread.Create(const a_Format: WAVEFORMATEX; const a_DelayMs: Cardinal = 0);
 begin
   f_WaveFormat := a_Format;
+  f_ActualDuration := a_DelayMs;
 
   FreeOnTerminate := False;
   inherited Create(False);
@@ -75,8 +76,12 @@ begin
       // Get buffer size
       if Succeeded(f_AudioClient.GetBufferSize(@f_BufferFrameCount)) then
       begin
-        // Get Duration
-        f_ActualDuration := Round(REFTIMES_PER_SEC * f_BufferFrameCount / f_WaveFormat.nSamplesPerSec);
+        // Get Appropriate Duration
+        if f_ActualDuration = 0 then
+        begin
+          f_ActualDuration :=
+            Round(REFTIMES_PER_SEC * f_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
+        end;
 
         // Get Audio Render Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioRenderClient, f_AudioRenderClient)) then
@@ -112,7 +117,7 @@ begin
     while (not Terminated) do
     begin
       // Wait...
-      TThread.Sleep(Round(f_ActualDuration / REFTIMES_PER_MSEC / 2));
+      TThread.Sleep(f_ActualDuration);
 
       // See how much buffer space is available
       if Succeeded(f_AudioClient.GetCurrentPadding(@l_NumFramesPadding)) then
