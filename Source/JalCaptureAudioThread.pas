@@ -15,14 +15,16 @@ type
   TJalCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
+    f_WaveFormat: WAVEFORMATEX;
+    f_DelayRefTime: REFERENCE_TIME;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
     f_AudioDevice: TJalAudioDevice;
     f_AudioClient: IAudioClient;
-    f_WaveFormat: WAVEFORMATEX;
+
     f_AudioCaptureClient: IAudioCaptureClient;
-    f_ActualDuration: REFERENCE_TIME;
+    f_ThreadDuration: REFERENCE_TIME;
 
     function StartCapture: Boolean;
   public
@@ -52,8 +54,17 @@ constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a
 begin
   f_AudioType := a_AudioType;
   f_WaveFormat := a_Format;
-  f_ActualDuration := a_DelayMs;
   f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
+
+  // Set default *1sec
+  if f_DelayRefTime = 0 then
+  begin
+    f_DelayRefTime := REFTIMES_PER_SEC;
+  end
+  else
+  begin
+    f_DelayRefTime := a_DelayMs * REFTIMES_PER_MSEC;
+  end;
 
   FreeOnTerminate := False;
   inherited Create(False);
@@ -88,24 +99,21 @@ begin
     end;
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
-    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @f_WaveFormat,
+    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, f_DelayRefTime, 0, @f_WaveFormat,
       nil)) then
     begin
-      // Get Appropriate Duration
-      if f_ActualDuration = 0 then
+      if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
       begin
-        if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
-        begin
-          f_ActualDuration :=
-            Round(REFTIMES_PER_SEC * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
-        end;
-      end;
+        // Get thread sleep time
+        f_ThreadDuration :=
+          Round(f_DelayRefTime * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
 
-      // Get Audio Capture Client
-      if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, f_AudioCaptureClient)) then
-      begin
-        // Start Capture
-        Result := Succeeded(f_AudioClient.Start);
+        // Get Audio Capture Client
+        if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, f_AudioCaptureClient)) then
+        begin
+          // Start Capture
+          Result := Succeeded(f_AudioClient.Start);
+        end;
       end;
     end;
   end;
@@ -140,7 +148,7 @@ begin
     while (not Terminated) do
     begin
       // Wait...
-      TThread.Sleep(f_ActualDuration);
+      TThread.Sleep(f_ThreadDuration);
 
       // Get packet size
       if Succeeded(f_AudioCaptureClient.GetNextPacketSize(@l_PacketLength)) then
