@@ -9,25 +9,27 @@ uses
   Jal.Win.MMDeviceAPI, Jal.Win.AudioClient, JalAudioDevice, JalNotificationClient;
 
 type
-  TAudioType = (atMic, atSystem);
+  TAudioType       = (atMic, atSystem);
   TOnCaptureBuffer = procedure(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer) of object;
 
   TJalCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
+    f_WaveFormat: WAVEFORMATEX;
+    f_DelayRefTime: REFERENCE_TIME;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
     f_AudioDevice: TJalAudioDevice;
     f_AudioClient: IAudioClient;
-    f_WaveFormat: WAVEFORMATEX;
+
     f_AudioCaptureClient: IAudioCaptureClient;
-    f_ActualDuration: REFERENCE_TIME;
+    f_ThreadDuration: REFERENCE_TIME;
 
     function StartCapture: Boolean;
   public
     constructor Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
-      const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+      const a_DelayMs: Cardinal = 0; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
     property OnCaptureBuffer: TOnCaptureBuffer write f_OnCaptureBuffer;
@@ -37,8 +39,8 @@ type
 
 const
   // 1 REFTIMES = 100 nano sec
-  REFTIMES_PER_SEC: REFERENCE_TIME = 10000000; // REFTIMES to Sec
-  REFTIMES_PER_MSEC: REFERENCE_TIME = 10000; // REFTIMES to MSec
+  REFTIMES_PER_SEC: REFERENCE_TIME  = 10000000; // REFTIMES to Sec
+  REFTIMES_PER_MSEC: REFERENCE_TIME = 10000;    // REFTIMES to MSec
 
 implementation
 
@@ -48,11 +50,21 @@ uses
 { TAudioStreamClientThread }
 
 constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
-  const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+  const a_DelayMs: Cardinal = 0; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
   f_WaveFormat := a_Format;
   f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
+
+  // Set default *1sec
+  if f_DelayRefTime = 0 then
+  begin
+    f_DelayRefTime := REFTIMES_PER_SEC;
+  end
+  else
+  begin
+    f_DelayRefTime := a_DelayMs * REFTIMES_PER_MSEC;
+  end;
 
   FreeOnTerminate := False;
   inherited Create(False);
@@ -82,19 +94,19 @@ begin
       atSystem:
         l_StreamFlags := AUDCLNT_STREAMFLAGS_LOOPBACK or AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
           AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
-    else
-      l_StreamFlags := 0;
+      else
+        l_StreamFlags := 0;
     end;
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
-    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @f_WaveFormat,
+    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, f_DelayRefTime, 0, @f_WaveFormat,
       nil)) then
     begin
-      // Get Buffer Size
       if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
       begin
-        // Get Duration
-        f_ActualDuration := Round(REFTIMES_PER_SEC * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec);
+        // Get thread sleep time
+        f_ThreadDuration :=
+          Round(f_DelayRefTime * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
 
         // Get Audio Capture Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, f_AudioCaptureClient)) then
@@ -123,8 +135,8 @@ begin
       l_DataFlow := eCapture;
     atSystem:
       l_DataFlow := eRender;
-  else
-    Exit;
+    else
+      Exit;
   end;
 
   // Create Audio Device
@@ -136,7 +148,7 @@ begin
     while (not Terminated) do
     begin
       // Wait...
-      TThread.Sleep(Round(f_ActualDuration / REFTIMES_PER_MSEC / 2));
+      TThread.Sleep(f_ThreadDuration);
 
       // Get packet size
       if Succeeded(f_AudioCaptureClient.GetNextPacketSize(@l_PacketLength)) then

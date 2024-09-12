@@ -78,16 +78,17 @@ var
   l_Format: WAVEFORMATEX;
 begin
   // Get Format
-  l_Format := TJalWaveHelper.GetPCMFormat(StrToInt(cmb_SamplingRate.Text), StrToInt(cmb_Bits.Text),
-    cmb_Channel.ItemIndex + 1);
+  l_Format :=
+    TJalWaveHelper.GetPCMFormat(StrToInt(cmb_SamplingRate.Text), StrToInt(cmb_Bits.Text), cmb_Channel.ItemIndex + 1);
 
   // Create Wave Writer
-  f_WaveWriter := TJalWaveWriter.Create(ExtractFileDir(Application.ExeName) + Format('\%dch%dhz%dbit.wav',
-    [l_Format.nChannels, l_Format.nSamplesPerSec, l_Format.wBitsPerSample]), l_Format);
+  f_WaveWriter := TJalWaveWriter.Create(
+    ExtractFileDir(Application.ExeName) +
+    Format('\%dch%dhz%dbit.wav', [l_Format.nChannels, l_Format.nSamplesPerSec, l_Format.wBitsPerSample]), l_Format);
 
-  // Create Capture Thread
-  f_CaptureAudioThread := TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), f_WaveWriter.Format,
-    OnDefaultDeviceChanged);
+  // Create Capture Thread  *Delay is 10ms for real-time capture.
+  f_CaptureAudioThread :=
+    TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), f_WaveWriter.Format, 10, OnDefaultDeviceChanged);
 
   // Assign Handlers
   f_CaptureAudioThread.OnCaptureBuffer := OnCaptureBuffer;

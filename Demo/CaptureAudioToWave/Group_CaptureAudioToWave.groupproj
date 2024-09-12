@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{016D9153-6177-47AF-BD34-302DE26327D3}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="CaptureAudioToWave.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\Source\JAudioLib.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="CaptureAudioToWave">
+        <MSBuild Projects="CaptureAudioToWave.dproj"/>
+    </Target>
+    <Target Name="CaptureAudioToWave:Clean">
+        <MSBuild Projects="CaptureAudioToWave.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="CaptureAudioToWave:Make">
+        <MSBuild Projects="CaptureAudioToWave.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="JAudioLib">
+        <MSBuild Projects="..\..\Source\JAudioLib.dproj"/>
+    </Target>
+    <Target Name="JAudioLib:Clean">
+        <MSBuild Projects="..\..\Source\JAudioLib.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="JAudioLib:Make">
+        <MSBuild Projects="..\..\Source\JAudioLib.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="CaptureAudioToWave;JAudioLib"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="CaptureAudioToWave:Clean;JAudioLib:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="CaptureAudioToWave:Make;JAudioLib:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
