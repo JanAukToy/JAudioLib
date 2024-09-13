@@ -3,23 +3,23 @@ unit JalWaveWriter;
 interface
 
 uses
-  System.Classes, System.SysUtils,
+  System.Classes, System.SysUtils, Winapi.MMSystem,
 
   Jal.Win.AudioClient;
 
 type
   TJalWaveWriter = class
   private
-    f_Format: WAVEFORMATEX;
+    f_Format: tWAVEFORMATEX;
     f_FileStream: TFileStream;
     f_BinaryWriter: TBinaryWriter;
     f_DataSizePosition: Int64;
     f_DataSize: UInt32;
   public
-    constructor Create(const a_DirFileName: string; const a_Format: WAVEFORMATEX);
+    constructor Create(const a_DirFileName: string; const a_Format: tWAVEFORMATEX);
     destructor Destroy; override;
 
-    property Format: WAVEFORMATEX read f_Format;
+    property Format: tWAVEFORMATEX read f_Format;
 
     procedure WriteBuffer(const a_pSource: PByte; const a_Count: Integer);
     procedure Close;
@@ -29,7 +29,7 @@ implementation
 
 { TWaveWriter }
 
-constructor TJalWaveWriter.Create(const a_DirFileName: string; const a_Format: WAVEFORMATEX);
+constructor TJalWaveWriter.Create(const a_DirFileName: string; const a_Format: tWAVEFORMATEX);
 begin
   f_Format := a_Format;
 
