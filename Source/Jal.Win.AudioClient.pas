@@ -3,7 +3,7 @@ unit Jal.Win.AudioClient;
 interface
 
 uses
-  Winapi.Windows, Winapi.ActiveX, Winapi.PropSys;
+  Winapi.Windows, Winapi.ActiveX, Winapi.PropSys, Winapi.MMSystem;
 
 const
   IID_IAudioClient: TGUID        = '{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}';
@@ -11,6 +11,8 @@ const
   IID_IAudioCaptureClient: TGUID = '{C8ADBD64-E71E-48a0-A4DE-185C395CD317}';
 
   KSDATAFORMAT_SUBTYPE_PCM: TGUID = '{00000001-0000-0010-8000-00aa00389b71}';
+
+  WAVE_FORMAT_EXTENSIBLE = $FFFE;
 
   SPEAKER_FRONT_LEFT            = $00000001;
   SPEAKER_FRONT_RIGHT           = $00000002;
@@ -46,24 +48,10 @@ type
 
   PIAudioClient = ^IAudioClient;
 
-  PWAVEFORMATEX = ^WAVEFORMATEX;
-
-  tWAVEFORMATEX = record
-    wFormatTag: WORD;
-    nChannels: WORD;
-    nSamplesPerSec: DWORD;
-    nAvgBytesPerSec: DWORD;
-    nBlockAlign: WORD;
-    wBitsPerSample: WORD;
-    cbSize: WORD;
-  end;
-
-  WAVEFORMATEX = tWAVEFORMATEX;
-
   PWAVEFORMATEXTENSIBLE = ^WAVEFORMATEXTENSIBLE;
 
   tWAVEFORMATEXTENSIBLE = record
-    Format: WAVEFORMATEX;
+    Format: tWAVEFORMATEX;
     wValidBitsPerSample: WORD;
     dwChannelMask: DWORD;
     SubFormat: TGUID;
@@ -74,7 +62,7 @@ type
   IAudioClient = interface(IUnknown)
     ['{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}']
     function Initialize(ShareMode: AUDCLNT_SHAREMODE; StreamFlags: DWORD; hnsBufferDuration: REFERENCE_TIME;
-      hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEX; const AudioSessionGuid: PGUID)
+      hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEXTENSIBLE; const AudioSessionGuid: PGUID)
       : HRESULT; stdcall;
     function GetBufferSize(pNumBufferFrames: PUInt32): HRESULT; stdcall;
     function GetStreamLatency(phnsLatency: PREFERENCE_TIME): HRESULT; stdcall;

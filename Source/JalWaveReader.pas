@@ -3,9 +3,7 @@ unit JalWaveReader;
 interface
 
 uses
-  System.Classes, System.SysUtils, Winapi.MMSystem,
-
-  Jal.Win.AudioClient;
+  System.Classes, System.SysUtils, Winapi.MMSystem;
 
 type
   TJalWaveReader = class
@@ -13,13 +11,13 @@ type
     f_Available: Boolean;
     f_FileStream: TFileStream;
     f_BinaryReader: TBinaryReader;
-    f_Format: WAVEFORMATEX;
+    f_Format: tWAVEFORMATEX;
   public
     constructor Create(const a_DirFileName: string);
     destructor Destroy; override;
 
     property Available: Boolean read f_Available;
-    property Format: WAVEFORMATEX read f_Format;
+    property Format: tWAVEFORMATEX read f_Format;
 
     function ReadBuffer(const a_pDest: PByte; const a_Count: Cardinal): Cardinal;
   end;

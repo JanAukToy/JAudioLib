@@ -15,7 +15,7 @@ type
 
   TJalRenderAudioThread = class(TThread)
   private
-    f_WaveFormat: WAVEFORMATEX;
+    f_WaveFormat: tWAVEFORMATEX;
     f_LowLatencyMode: Boolean;
     f_OnRenderBuffer: TOnRenderBuffer;
 
@@ -27,7 +27,7 @@ type
 
     function StartRender: Boolean;
   public
-    constructor Create(const a_Format: WAVEFORMATEX; const a_LowLatencyMode: Boolean = False);
+    constructor Create(const a_Format: tWAVEFORMATEX; const a_LowLatencyMode: Boolean = False);
     destructor Destroy; override;
 
     property OnRenderBuffer: TOnRenderBuffer write f_OnRenderBuffer;
@@ -49,7 +49,7 @@ uses
 
 { TRenderAudioThread }
 
-constructor TJalRenderAudioThread.Create(const a_Format: WAVEFORMATEX; const a_LowLatencyMode: Boolean = False);
+constructor TJalRenderAudioThread.Create(const a_Format: tWAVEFORMATEX; const a_LowLatencyMode: Boolean = False);
 begin
   f_WaveFormat := a_Format;
   f_LowLatencyMode := a_LowLatencyMode;

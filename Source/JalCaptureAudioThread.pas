@@ -15,7 +15,7 @@ type
   TJalCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
-    f_WaveFormat: WAVEFORMATEX;
+    f_WaveFormat: tWAVEFORMATEX;
     f_LowLatencyMode: Boolean;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
     f_OnCaptureBuffer: TOnCaptureBuffer;
@@ -28,7 +28,7 @@ type
 
     function StartCapture: Boolean;
   public
-    constructor Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
+    constructor Create(const a_AudioType: TAudioType; const a_Format: tWAVEFORMATEX;
       const a_LowLatencyMode: Boolean = False; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
@@ -51,7 +51,7 @@ uses
 
 { TAudioStreamClientThread }
 
-constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
+constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Format: tWAVEFORMATEX;
   const a_LowLatencyMode: Boolean = False; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
@@ -94,12 +94,12 @@ begin
 
     l_WaveFormatExtensible.Format := f_WaveFormat;
     l_WaveFormatExtensible.wValidBitsPerSample := f_WaveFormat.wBitsPerSample;
-    l_WaveFormatExtensible.dwChannelMask := 2;
+    l_WaveFormatExtensible.dwChannelMask := 1;
     l_WaveFormatExtensible.SubFormat := KSDATAFORMAT_SUBTYPE_PCM;
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(
-      AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @f_WaveFormat, nil)) then
+      AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @l_WaveFormatExtensible, nil)) then
     begin
       if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
       begin
