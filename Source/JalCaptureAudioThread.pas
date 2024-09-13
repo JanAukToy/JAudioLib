@@ -16,7 +16,7 @@ type
   private
     f_AudioType: TAudioType;
     f_WaveFormat: WAVEFORMATEX;
-    f_DelayRefTime: REFERENCE_TIME;
+    f_LowLatencyMode: Boolean;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
@@ -24,12 +24,12 @@ type
     f_AudioClient: IAudioClient;
 
     f_AudioCaptureClient: IAudioCaptureClient;
-    f_ThreadDuration: REFERENCE_TIME;
+    f_ThreadIntervalMs: Cardinal;
 
     function StartCapture: Boolean;
   public
     constructor Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
-      const a_DelayMs: Cardinal = 0; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+      const a_LowLatencyMode: Boolean = False; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
     property OnCaptureBuffer: TOnCaptureBuffer write f_OnCaptureBuffer;
@@ -42,29 +42,22 @@ const
   REFTIMES_PER_SEC: REFERENCE_TIME  = 10000000; // REFTIMES to Sec
   REFTIMES_PER_MSEC: REFERENCE_TIME = 10000;    // REFTIMES to MSec
 
+  THREAD_INTERVALMS_LOWLATENCY: Integer = 10;
+
 implementation
 
 uses
-  JalWaveHelper;
+  System.Math;
 
 { TAudioStreamClientThread }
 
 constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Format: WAVEFORMATEX;
-  const a_DelayMs: Cardinal = 0; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+  const a_LowLatencyMode: Boolean = False; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
   f_WaveFormat := a_Format;
+  f_LowLatencyMode := a_LowLatencyMode;
   f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
-
-  // Set default *1sec
-  if f_DelayRefTime = 0 then
-  begin
-    f_DelayRefTime := REFTIMES_PER_SEC;
-  end
-  else
-  begin
-    f_DelayRefTime := a_DelayMs * REFTIMES_PER_MSEC;
-  end;
 
   FreeOnTerminate := False;
   inherited Create(False);
@@ -82,6 +75,7 @@ function TJalCaptureAudioThread.StartCapture: Boolean;
 var
   l_StreamFlags: DWORD;
   l_BufferFrameCount: DWORD;
+  l_WaveFormatExtensible: WAVEFORMATEXTENSIBLE;
 begin
   Result := False;
 
@@ -98,15 +92,27 @@ begin
         l_StreamFlags := 0;
     end;
 
+    l_WaveFormatExtensible.Format := f_WaveFormat;
+    l_WaveFormatExtensible.wValidBitsPerSample := f_WaveFormat.wBitsPerSample;
+    l_WaveFormatExtensible.dwChannelMask := 2;
+    l_WaveFormatExtensible.SubFormat := KSDATAFORMAT_SUBTYPE_PCM;
+
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
-    if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, f_DelayRefTime, 0, @f_WaveFormat,
-      nil)) then
+    if Succeeded(f_AudioClient.Initialize(
+      AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @f_WaveFormat, nil)) then
     begin
       if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
       begin
-        // Get thread sleep time
-        f_ThreadDuration :=
-          Round(f_DelayRefTime * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
+        if f_LowLatencyMode then
+        begin
+          f_ThreadIntervalMs := THREAD_INTERVALMS_LOWLATENCY;
+        end
+        else
+        begin
+          // Get thread sleep time
+          f_ThreadIntervalMs :=
+            Ceil(REFTIMES_PER_SEC * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
+        end;
 
         // Get Audio Capture Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, f_AudioCaptureClient)) then
@@ -148,7 +154,7 @@ begin
     while (not Terminated) do
     begin
       // Wait...
-      TThread.Sleep(f_ThreadDuration);
+      TThread.Sleep(f_ThreadIntervalMs);
 
       // Get packet size
       if Succeeded(f_AudioCaptureClient.GetNextPacketSize(@l_PacketLength)) then

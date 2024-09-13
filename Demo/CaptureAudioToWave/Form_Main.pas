@@ -88,7 +88,7 @@ begin
 
   // Create Capture Thread  *Delay is 10ms for real-time capture.
   f_CaptureAudioThread :=
-    TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), f_WaveWriter.Format, 10, OnDefaultDeviceChanged);
+    TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), f_WaveWriter.Format, True, OnDefaultDeviceChanged);
 
   // Assign Handlers
   f_CaptureAudioThread.OnCaptureBuffer := OnCaptureBuffer;

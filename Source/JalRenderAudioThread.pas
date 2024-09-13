@@ -16,18 +16,18 @@ type
   TJalRenderAudioThread = class(TThread)
   private
     f_WaveFormat: WAVEFORMATEX;
-    f_DelayRefTime: REFERENCE_TIME;
+    f_LowLatencyMode: Boolean;
     f_OnRenderBuffer: TOnRenderBuffer;
 
     f_AudioDevice: TJalAudioDevice;
     f_AudioClient: IAudioClient;
     f_AudioRenderClient: IAudioRenderClient;
     f_BufferFrameCount: Cardinal;
-    f_ThreadDuration: REFERENCE_TIME;
+    f_ThreadIntervalMs: Cardinal;
 
     function StartRender: Boolean;
   public
-    constructor Create(const a_Format: WAVEFORMATEX; const a_DelayMs: Cardinal = 0);
+    constructor Create(const a_Format: WAVEFORMATEX; const a_LowLatencyMode: Boolean = False);
     destructor Destroy; override;
 
     property OnRenderBuffer: TOnRenderBuffer write f_OnRenderBuffer;
@@ -40,23 +40,19 @@ const
   REFTIMES_PER_SEC: REFERENCE_TIME  = 10000000; // REFTIMES to Sec
   REFTIMES_PER_MSEC: REFERENCE_TIME = 10000;    // REFTIMES to MSec
 
+  THREAD_INTERVALMS_LOWLATENCY: Integer = 10;
+
 implementation
+
+uses
+  System.Math;
 
 { TRenderAudioThread }
 
-constructor TJalRenderAudioThread.Create(const a_Format: WAVEFORMATEX; const a_DelayMs: Cardinal = 0);
+constructor TJalRenderAudioThread.Create(const a_Format: WAVEFORMATEX; const a_LowLatencyMode: Boolean = False);
 begin
   f_WaveFormat := a_Format;
-
-  // Set default *1sec
-  if f_DelayRefTime = 0 then
-  begin
-    f_DelayRefTime := REFTIMES_PER_SEC;
-  end
-  else
-  begin
-    f_DelayRefTime := a_DelayMs * REFTIMES_PER_MSEC;
-  end;
+  f_LowLatencyMode := a_LowLatencyMode;
 
   FreeOnTerminate := False;
   inherited Create(False);
@@ -81,14 +77,21 @@ begin
   begin
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
-      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, f_DelayRefTime, 0, @f_WaveFormat, nil)) then
+      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, @f_WaveFormat, nil)) then
     begin
       // Get buffer size
       if Succeeded(f_AudioClient.GetBufferSize(@f_BufferFrameCount)) then
       begin
-        // Get thread sleep time
-        f_ThreadDuration :=
-          Round(f_DelayRefTime * f_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
+        if f_LowLatencyMode then
+        begin
+          f_ThreadIntervalMs := THREAD_INTERVALMS_LOWLATENCY;
+        end
+        else
+        begin
+          // Get thread sleep time
+          f_ThreadIntervalMs :=
+            Ceil(REFTIMES_PER_SEC * f_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
+        end;
 
         // Get Audio Render Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioRenderClient, f_AudioRenderClient)) then
@@ -124,7 +127,7 @@ begin
     while (not Terminated) do
     begin
       // Wait...
-      TThread.Sleep(f_ThreadDuration);
+      TThread.Sleep(f_ThreadIntervalMs);
 
       // See how much buffer space is available
       if Succeeded(f_AudioClient.GetCurrentPadding(@l_NumFramesPadding)) then
