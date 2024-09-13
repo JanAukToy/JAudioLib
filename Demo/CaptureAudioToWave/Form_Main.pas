@@ -48,6 +48,7 @@ var
 implementation
 
 uses
+  Winapi.MMSystem,
   JalWaveHelper;
 
 {$R *.dfm}
@@ -75,7 +76,7 @@ end;
 
 procedure TFormMain.btn_StartCaptureClick(Sender: TObject);
 var
-  l_Format: WAVEFORMATEX;
+  l_Format: tWAVEFORMATEX;
 begin
   // Get Format
   l_Format :=
