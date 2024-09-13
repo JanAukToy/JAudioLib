@@ -68,8 +68,8 @@ type
     function GetStreamLatency(phnsLatency: PREFERENCE_TIME): HRESULT; stdcall;
     function GetCurrentPadding(pNumPaddingFrames: PUInt32): HRESULT; stdcall;
     function IsFormatSupported(ShareMode: AUDCLNT_SHAREMODE; const pFormat: PWAVEFORMATEX;
-      out ppClosestMatch: PWAVEFORMATEX): HRESULT; stdcall;
-    function GetMixFormat(out ppDeviceFormat: PWAVEFORMATEX): HRESULT; stdcall;
+      out ppClosestMatch: PWAVEFORMATEXTENSIBLE): HRESULT; stdcall;
+    function GetMixFormat(out ppDeviceFormat: PWAVEFORMATEXTENSIBLE): HRESULT; stdcall;
     function GetDevicePeriod(phnsDefaultDevicePeriod: PREFERENCE_TIME; phnsMinimumDevicePeriod: PREFERENCE_TIME)
       : HRESULT; stdcall;
     function Start(): HRESULT; stdcall;
