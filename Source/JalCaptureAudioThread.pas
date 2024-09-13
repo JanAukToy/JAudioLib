@@ -10,11 +10,13 @@ uses
 
 type
   TAudioType       = (atMic, atSystem);
+  TAudioShareMode  = (asmShared, asmExclusive);
   TOnCaptureBuffer = procedure(const a_Sender: TThread; const a_pData: PByte; const a_Count: Integer) of object;
 
   TJalCaptureAudioThread = class(TThread)
   private
     f_AudioType: TAudioType;
+    f_AudioShareMode: TAudioShareMode;
     f_WaveFormat: tWAVEFORMATEX;
     f_LowLatencyMode: Boolean;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
@@ -28,8 +30,9 @@ type
 
     function StartCapture: Boolean;
   public
-    constructor Create(const a_AudioType: TAudioType; const a_Format: tWAVEFORMATEX;
-      const a_LowLatencyMode: Boolean = False; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+    constructor Create(const a_AudioType: TAudioType; const a_AudioShareMode: TAudioShareMode;
+      const a_Format: tWAVEFORMATEX; const a_LowLatencyMode: Boolean = False;
+      const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
     property OnCaptureBuffer: TOnCaptureBuffer write f_OnCaptureBuffer;
@@ -42,6 +45,7 @@ const
   REFTIMES_PER_SEC: REFERENCE_TIME  = 10000000; // REFTIMES to Sec
   REFTIMES_PER_MSEC: REFERENCE_TIME = 10000;    // REFTIMES to MSec
 
+  // For LowLatency Mode
   THREAD_INTERVALMS_LOWLATENCY: Integer = 10;
 
 implementation
@@ -51,10 +55,12 @@ uses
 
 { TAudioStreamClientThread }
 
-constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_Format: tWAVEFORMATEX;
-  const a_LowLatencyMode: Boolean = False; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_AudioShareMode: TAudioShareMode;
+  const a_Format: tWAVEFORMATEX; const a_LowLatencyMode: Boolean = False;
+  const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
+  f_AudioShareMode := a_AudioShareMode;
   f_WaveFormat := a_Format;
   f_LowLatencyMode := a_LowLatencyMode;
   f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
@@ -73,31 +79,47 @@ end;
 
 function TJalCaptureAudioThread.StartCapture: Boolean;
 var
+  l_ShareMode: AUDCLNT_SHAREMODE;
   l_StreamFlags: DWORD;
   l_BufferFrameCount: DWORD;
   l_WaveFormatExtensible: WAVEFORMATEXTENSIBLE;
+  l_Periodicity: REFERENCE_TIME;
 begin
   Result := False;
 
   // Get Audio Client
   if Succeeded(f_AudioDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, f_AudioClient)) then
   begin
-    case f_AudioType of
-      atMic:
-        l_StreamFlags := AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
-      atSystem:
-        l_StreamFlags := AUDCLNT_STREAMFLAGS_LOOPBACK or AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
-          AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+    // Support exclusive mode.
+    if f_AudioShareMode = asmExclusive then
+    begin
+      l_ShareMode := AUDCLNT_SHAREMODE_EXCLUSIVE;
+      l_StreamFlags := 0;
+      l_Periodicity := REFTIMES_PER_SEC;
+    end
+    else
+    begin
+      l_ShareMode := AUDCLNT_SHAREMODE_SHARED;
+
+      case f_AudioType of
+        atMic:
+          l_StreamFlags := AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+        atSystem:
+          l_StreamFlags := AUDCLNT_STREAMFLAGS_LOOPBACK or AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
+            AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
       else
         l_StreamFlags := 0;
+      end;
+
+      l_Periodicity := 0;
     end;
 
-    // Change to extensible.
+    // Change to Extensible.
     l_WaveFormatExtensible.Format := f_WaveFormat;
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(
-      AUDCLNT_SHAREMODE_SHARED, l_StreamFlags, REFTIMES_PER_SEC, 0, @l_WaveFormatExtensible, nil)) then
+      l_ShareMode, l_StreamFlags, REFTIMES_PER_SEC, l_Periodicity, @l_WaveFormatExtensible, nil)) then
     begin
       if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
       begin
@@ -139,8 +161,8 @@ begin
       l_DataFlow := eCapture;
     atSystem:
       l_DataFlow := eRender;
-    else
-      Exit;
+  else
+    Exit;
   end;
 
   // Create Audio Device

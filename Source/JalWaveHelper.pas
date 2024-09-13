@@ -12,7 +12,7 @@ type
     class function GetPCMFormat(const a_Samples: Cardinal; const a_Bits, a_Channels: Word): tWAVEFORMATEX;
   end;
 
-  TWaveformatExHelper = record helper for tWAVEFORMATEX
+  TMyWaveformatExHelper = record helper for tWAVEFORMATEX
     function ToExtensible: WAVEFORMATEXTENSIBLE;
   end;
 
@@ -31,13 +31,14 @@ begin
   Result.cbSize := 0;
 end;
 
-{ TWaveformatExHelper }
+{ TMyWaveformatExHelper }
 
-function TWaveformatExHelper.ToExtensible: WAVEFORMATEXTENSIBLE;
+function TMyWaveformatExHelper.ToExtensible: WAVEFORMATEXTENSIBLE;
 begin
   Result.Format := Self;
 
   Result.Format.wFormatTag := WAVE_FORMAT_EXTENSIBLE;
+  Result.Format.cbSize := 22;
   Result.wValidBitsPerSample := Result.Format.wBitsPerSample;
   if Self.nChannels = 1 then
   begin
