@@ -69,15 +69,19 @@ end;
 function TJalRenderAudioThread.StartRender: Boolean;
 var
   l_pBuffer: PByte;
+  l_WaveFormatExtensible: WAVEFORMATEXTENSIBLE;
 begin
   Result := False;
 
   // Get Audio Client
   if Succeeded(f_AudioDevice.Device.Activate(IID_IAudioClient, CLSCTX_ALL, nil, f_AudioClient)) then
   begin
+    // Change to extensible.
+    l_WaveFormatExtensible.Format := f_WaveFormat;
+
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM or
-      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, @f_WaveFormat, nil)) then
+      AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY, REFTIMES_PER_SEC, 0, @l_WaveFormatExtensible, nil)) then
     begin
       // Get buffer size
       if Succeeded(f_AudioClient.GetBufferSize(@f_BufferFrameCount)) then

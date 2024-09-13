@@ -47,7 +47,7 @@ const
 implementation
 
 uses
-  System.Math;
+  System.Math, JalWaveHelper;
 
 { TAudioStreamClientThread }
 
@@ -92,10 +92,8 @@ begin
         l_StreamFlags := 0;
     end;
 
+    // Change to extensible.
     l_WaveFormatExtensible.Format := f_WaveFormat;
-    l_WaveFormatExtensible.wValidBitsPerSample := f_WaveFormat.wBitsPerSample;
-    l_WaveFormatExtensible.dwChannelMask := 1;
-    l_WaveFormatExtensible.SubFormat := KSDATAFORMAT_SUBTYPE_PCM;
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(
