@@ -81,14 +81,15 @@ object FormMain: TFormMain
     Padding.Bottom = 10
     TabOrder = 1
     object btn_StartPlay: TButton
-      Left = 11
+      Left = 273
       Top = 11
       Width = 100
       Height = 28
-      Align = alLeft
+      Align = alRight
       Caption = 'START'
       TabOrder = 0
       OnClick = btn_StartPlayClick
+      ExplicitLeft = 11
     end
     object btn_EndPlay: TButton
       Left = 373
@@ -99,6 +100,21 @@ object FormMain: TFormMain
       Caption = 'END'
       TabOrder = 1
       OnClick = btn_EndPlayClick
+    end
+    object cmb_ShareMode: TComboBox
+      Left = 11
+      Top = 11
+      Width = 120
+      Height = 23
+      Cursor = crHandPoint
+      Align = alLeft
+      Style = csDropDownList
+      ItemIndex = 0
+      TabOrder = 2
+      Text = 'SharedMode'
+      Items.Strings = (
+        'SharedMode'
+        'ExclusiveMode')
     end
   end
   object odl_Wave: TOpenDialog

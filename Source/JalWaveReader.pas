@@ -3,9 +3,7 @@ unit JalWaveReader;
 interface
 
 uses
-  System.Classes, System.SysUtils, Winapi.MMSystem,
-
-  Jal.Win.AudioClient;
+  System.Classes, System.SysUtils, System.Types, Winapi.MMSystem, Jal.Win.AudioClient;
 
 type
   TJalWaveReader = class
@@ -13,19 +11,16 @@ type
     f_Available: Boolean;
     f_FileStream: TFileStream;
     f_BinaryReader: TBinaryReader;
-    f_Format: WAVEFORMATEX;
+    f_FormatExtensible: tWAVEFORMATEXTENSIBLE;
   public
     constructor Create(const a_DirFileName: string);
     destructor Destroy; override;
 
     property Available: Boolean read f_Available;
-    property Format: WAVEFORMATEX read f_Format;
+    property FormatExtensible: tWAVEFORMATEXTENSIBLE read f_FormatExtensible;
 
     function ReadBuffer(const a_pDest: PByte; const a_Count: Cardinal): Cardinal;
   end;
-
-const
-  WAVE_FORMAT_EXTENSIBLE = $FFFE;
 
 implementation
 
@@ -43,6 +38,7 @@ var
   l_FmtSize: Cardinal;
   l_DataIdent: TArray<Char>;
   l_DataIdentStr: string;
+  l_DataSize: Cardinal;
 begin
   f_Available := False;
 
@@ -70,21 +66,21 @@ begin
 
       if (l_FmtIdentStr = 'fmt ') and (l_FmtSize >= 16) then
       begin
-        f_Format.wFormatTag := f_BinaryReader.ReadWord;
-        f_Format.nChannels := f_BinaryReader.ReadWord;
-        f_Format.nSamplesPerSec := f_BinaryReader.ReadCardinal;
-        f_Format.nAvgBytesPerSec := f_BinaryReader.ReadCardinal;
-        f_Format.nBlockAlign := f_BinaryReader.ReadWord;
-        f_Format.wBitsPerSample := f_BinaryReader.ReadWord;
+        f_FormatExtensible.Format.wFormatTag := f_BinaryReader.ReadWord;
+        f_FormatExtensible.Format.nChannels := f_BinaryReader.ReadWord;
+        f_FormatExtensible.Format.nSamplesPerSec := f_BinaryReader.ReadCardinal;
+        f_FormatExtensible.Format.nAvgBytesPerSec := f_BinaryReader.ReadCardinal;
+        f_FormatExtensible.Format.nBlockAlign := f_BinaryReader.ReadWord;
+        f_FormatExtensible.Format.wBitsPerSample := f_BinaryReader.ReadWord;
       end;
 
       // PCM
-      if f_Format.wFormatTag = WAVE_FORMAT_PCM then
+      if f_FormatExtensible.Format.wFormatTag = WAVE_FORMAT_PCM then
       begin
         // Without extension block
         if l_FmtSize = 16 then
         begin
-          f_Format.cbSize := 0;
+          f_FormatExtensible.Format.cbSize := 0;
 
           // Read Data chunk
           l_DataIdent := f_BinaryReader.ReadChars(4);
@@ -93,19 +89,24 @@ begin
 
           if l_DataIdentStr = 'data' then
           begin
-            f_Available := True;
+            l_DataSize := f_BinaryReader.ReadCardinal;
+
+            if l_DataSize > 0 then
+            begin
+              f_Available := True;
+            end;
           end;
         end;
       end
       // Extensible
-      else
-        if f_Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE then
-        begin
-          // Read extension block...
-          f_Format.cbSize := f_BinaryReader.ReadWord;
-
-          { TODO : Support for WAVEFORMATEXTENSIBLE format }
-        end;
+      else if f_FormatExtensible.Format.wFormatTag = WAVE_FORMAT_EXTENSIBLE then
+      begin
+        // Read extension block
+        f_FormatExtensible.Format.cbSize := f_BinaryReader.ReadWord;
+        f_FormatExtensible.wValidBitsPerSample := f_BinaryReader.ReadWord;
+        f_FormatExtensible.dwChannelMask := f_BinaryReader.ReadCardinal;
+        f_FormatExtensible.SubFormat := TGUID.Create(f_BinaryReader.ReadBytes(16));
+      end;
     end;
 
   except
@@ -130,7 +131,7 @@ var
 begin
   // Read Data
   SetLength(l_Data, a_Count);
-  Result := f_BinaryReader.Read(l_Data, 0, a_Count);
+  Result := f_BinaryReader.Read(l_Data, 0, Length(l_Data));
 
   Move(l_Data[0], a_pDest^, Result);
 end;

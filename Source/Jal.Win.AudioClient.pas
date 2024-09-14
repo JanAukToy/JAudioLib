@@ -3,7 +3,7 @@ unit Jal.Win.AudioClient;
 interface
 
 uses
-  Winapi.Windows, Winapi.ActiveX, Winapi.PropSys;
+  Winapi.Windows, Winapi.ActiveX, Winapi.PropSys, Winapi.MMSystem;
 
 const
   IID_IAudioClient: TGUID        = '{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}';
@@ -11,6 +11,8 @@ const
   IID_IAudioCaptureClient: TGUID = '{C8ADBD64-E71E-48a0-A4DE-185C395CD317}';
 
   KSDATAFORMAT_SUBTYPE_PCM: TGUID = '{00000001-0000-0010-8000-00aa00389b71}';
+
+  WAVE_FORMAT_EXTENSIBLE = $FFFE;
 
   SPEAKER_FRONT_LEFT            = $00000001;
   SPEAKER_FRONT_RIGHT           = $00000002;
@@ -41,41 +43,18 @@ type
   _AUDCLNT_BUFFERFLAGS = (AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY = $00000001, AUDCLNT_BUFFERFLAGS_SILENT = $00000002,
     AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR = $00000004);
   {$MINENUMSIZE 1}
-  REFERENCE_TIME  = Int64;
+  REFERENCE_TIME  = UInt64;
   PREFERENCE_TIME = ^REFERENCE_TIME;
 
   PIAudioClient = ^IAudioClient;
 
-  PWAVEFORMATEX = ^WAVEFORMATEX;
-
-  tWAVEFORMATEX = record
-    wFormatTag: WORD;
-    nChannels:
-      WORD;
-    nSamplesPerSec:
-      DWORD;
-    nAvgBytesPerSec:
-      DWORD;
-    nBlockAlign:
-      WORD;
-    wBitsPerSample:
-      WORD;
-    cbSize:
-      WORD;
-  end;
-
-  WAVEFORMATEX = tWAVEFORMATEX;
-
   PWAVEFORMATEXTENSIBLE = ^WAVEFORMATEXTENSIBLE;
 
   tWAVEFORMATEXTENSIBLE = record
-    Format: WAVEFORMATEX;
-    wValidBitsPerSample:
-      WORD;
-    dwChannelMask:
-      DWORD;
-    SubFormat:
-      TGUID;
+    Format: tWAVEFORMATEX;
+    wValidBitsPerSample: WORD;
+    dwChannelMask: DWORD;
+    SubFormat: TGUID;
   end;
 
   WAVEFORMATEXTENSIBLE = tWAVEFORMATEXTENSIBLE;
@@ -84,15 +63,13 @@ type
     ['{1CB9AD4C-DBFA-4c32-B178-C2F568A703B2}']
     function Initialize(ShareMode: AUDCLNT_SHAREMODE; StreamFlags: DWORD; hnsBufferDuration: REFERENCE_TIME;
       hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEXTENSIBLE; const AudioSessionGuid: PGUID)
-      : HRESULT;
-      stdcall;
-
-    function GetBufferSize(pNumBufferFrames: PUInt32): HRESULT; stdcall;
+      : HRESULT; stdcall;
+    function GetBufferSize(out pNumBufferFrames: UInt32): HRESULT; stdcall;
     function GetStreamLatency(phnsLatency: PREFERENCE_TIME): HRESULT; stdcall;
     function GetCurrentPadding(pNumPaddingFrames: PUInt32): HRESULT; stdcall;
     function IsFormatSupported(ShareMode: AUDCLNT_SHAREMODE; const pFormat: PWAVEFORMATEX;
-      out ppClosestMatch: PWAVEFORMATEX): HRESULT; stdcall;
-    function GetMixFormat(out ppDeviceFormat: PWAVEFORMATEX): HRESULT; stdcall;
+      out ppClosestMatch: PWAVEFORMATEXTENSIBLE): HRESULT; stdcall;
+    function GetMixFormat(out ppDeviceFormat: PWAVEFORMATEXTENSIBLE): HRESULT; stdcall;
     function GetDevicePeriod(phnsDefaultDevicePeriod: PREFERENCE_TIME; phnsMinimumDevicePeriod: PREFERENCE_TIME)
       : HRESULT; stdcall;
     function Start(): HRESULT; stdcall;

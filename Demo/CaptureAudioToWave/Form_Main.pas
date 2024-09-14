@@ -25,6 +25,9 @@ type
     pnl_AudioType: TPanel;
     txt_AudioType: TLabel;
     cmb_AudioType: TComboBox;
+    pnl_ShareMode: TPanel;
+    txt_ShareMode: TLabel;
+    cmb_ShareMode: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btn_StartCaptureClick(Sender: TObject);
@@ -48,6 +51,7 @@ var
 implementation
 
 uses
+  Winapi.MMSystem,
   JalWaveHelper;
 
 {$R *.dfm}
@@ -75,7 +79,7 @@ end;
 
 procedure TFormMain.btn_StartCaptureClick(Sender: TObject);
 var
-  l_Format: WAVEFORMATEX;
+  l_Format: tWAVEFORMATEX;
 begin
   // Get Format
   l_Format :=
@@ -88,7 +92,9 @@ begin
 
   // Create Capture Thread  *Delay is 10ms for real-time capture.
   f_CaptureAudioThread :=
-    TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), f_WaveWriter.Format, 10, OnDefaultDeviceChanged);
+    TJalCaptureAudioThread.Create(
+    TAudioType(cmb_AudioType.ItemIndex), TAudioShareMode(cmb_ShareMode.ItemIndex),
+    f_WaveWriter.Format, OnDefaultDeviceChanged);
 
   // Assign Handlers
   f_CaptureAudioThread.OnCaptureBuffer := OnCaptureBuffer;
