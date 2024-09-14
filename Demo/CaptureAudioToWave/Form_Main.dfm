@@ -31,12 +31,13 @@ object FormMain: TFormMain
     TabOrder = 0
     object pnl_SamplingRate: TPanel
       Left = 11
-      Top = 36
+      Top = 61
       Width = 312
       Height = 25
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 1
+      ExplicitTop = 36
       object txt_SamplingRate: TLabel
         Left = 0
         Top = 0
@@ -66,12 +67,13 @@ object FormMain: TFormMain
     end
     object pnl_Bits: TPanel
       Left = 11
-      Top = 61
+      Top = 86
       Width = 312
       Height = 25
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 2
+      ExplicitTop = 61
       object txt_Bits: TLabel
         Left = 0
         Top = 0
@@ -100,12 +102,13 @@ object FormMain: TFormMain
     end
     object pnl_Channel: TPanel
       Left = 11
-      Top = 86
+      Top = 111
       Width = 312
       Height = 25
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 3
+      ExplicitTop = 86
       object txt_Channel: TLabel
         Left = 0
         Top = 0
@@ -162,6 +165,41 @@ object FormMain: TFormMain
         Items.Strings = (
           'Mic'
           'System')
+      end
+    end
+    object pnl_ShareMode: TPanel
+      Left = 11
+      Top = 36
+      Width = 312
+      Height = 25
+      Align = alTop
+      BevelOuter = bvNone
+      TabOrder = 4
+      ExplicitTop = 30
+      object txt_ShareMode: TLabel
+        Left = 0
+        Top = 0
+        Width = 130
+        Height = 25
+        Align = alLeft
+        AutoSize = False
+        Caption = 'ShareMode:'
+        Layout = tlCenter
+        ExplicitTop = -6
+      end
+      object cmb_ShareMode: TComboBox
+        Left = 130
+        Top = 0
+        Width = 182
+        Height = 23
+        Align = alClient
+        Style = csDropDownList
+        ItemIndex = 0
+        TabOrder = 0
+        Text = 'Shared'
+        Items.Strings = (
+          'Shared'
+          'Exclusive')
       end
     end
   end

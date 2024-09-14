@@ -19,6 +19,7 @@ type
     edt_DirWaveFile: TEdit;
     odl_Wave: TOpenDialog;
     btn_OpenWaveFile: TButton;
+    cmb_ShareMode: TComboBox;
     procedure btn_StartPlayClick(Sender: TObject);
     procedure btn_OpenWaveFileClick(Sender: TObject);
     procedure btn_EndPlayClick(Sender: TObject);
@@ -90,7 +91,8 @@ begin
       if f_WaveReader.Available then
       begin
         // Create Render Thread
-        f_RenderAudioThread := TJalRenderAudioThread.Create(f_WaveReader.Format);
+        f_RenderAudioThread :=
+          TJalRenderAudioThread.Create(TAudioShareMode(cmb_ShareMode.ItemIndex), f_WaveReader.FormatExtensible.Format);
         f_RenderAudioThread.OnRenderBuffer := OnRenderBuffer;
         f_RenderAudioThread.OnTerminate := OnTerminate;
       end;
@@ -126,12 +128,15 @@ begin
   if not a_Sender.CheckTerminated then
   begin
     // Read buffer and set flags
-    a_Flags := IfThen(f_WaveReader.ReadBuffer(a_pData, a_AvailableCount) = 0, Ord(AUDCLNT_BUFFERFLAGS_SILENT), 0);
-
-    // End of data
-    if a_Flags = DWORD(Ord(AUDCLNT_BUFFERFLAGS_SILENT)) then
+    if f_WaveReader.ReadBuffer(a_pData, a_AvailableCount) = 0 then
     begin
+      a_Flags := DWORD(Ord(AUDCLNT_BUFFERFLAGS_SILENT));
+
       a_Sender.Terminate;
+    end
+    else
+    begin
+      a_Flags := 0;
     end;
   end;
 end;

@@ -25,6 +25,9 @@ type
     pnl_AudioType: TPanel;
     txt_AudioType: TLabel;
     cmb_AudioType: TComboBox;
+    pnl_ShareMode: TPanel;
+    txt_ShareMode: TLabel;
+    cmb_ShareMode: TComboBox;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btn_StartCaptureClick(Sender: TObject);
@@ -89,7 +92,9 @@ begin
 
   // Create Capture Thread  *Delay is 10ms for real-time capture.
   f_CaptureAudioThread :=
-    TJalCaptureAudioThread.Create(TAudioType(cmb_AudioType.ItemIndex), f_WaveWriter.Format, True, OnDefaultDeviceChanged);
+    TJalCaptureAudioThread.Create(
+    TAudioType(cmb_AudioType.ItemIndex), TAudioShareMode(cmb_ShareMode.ItemIndex),
+    f_WaveWriter.Format, OnDefaultDeviceChanged);
 
   // Assign Handlers
   f_CaptureAudioThread.OnCaptureBuffer := OnCaptureBuffer;

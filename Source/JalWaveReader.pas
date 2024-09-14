@@ -22,9 +22,6 @@ type
     function ReadBuffer(const a_pDest: PByte; const a_Count: Cardinal): Cardinal;
   end;
 
-const
-  WAVE_FORMAT_EXTENSIBLE = $FFFE;
-
 implementation
 
 { TWaveReader }
@@ -41,6 +38,7 @@ var
   l_FmtSize: Cardinal;
   l_DataIdent: TArray<Char>;
   l_DataIdentStr: string;
+  l_DataSize: Cardinal;
 begin
   f_Available := False;
 
@@ -91,7 +89,12 @@ begin
 
           if l_DataIdentStr = 'data' then
           begin
-            f_Available := True;
+            l_DataSize := f_BinaryReader.ReadCardinal;
+
+            if l_DataSize > 0 then
+            begin
+              f_Available := True;
+            end;
           end;
         end;
       end
@@ -128,7 +131,7 @@ var
 begin
   // Read Data
   SetLength(l_Data, a_Count);
-  Result := f_BinaryReader.Read(l_Data, 0, a_Count);
+  Result := f_BinaryReader.Read(l_Data, 0, Length(l_Data));
 
   Move(l_Data[0], a_pDest^, Result);
 end;

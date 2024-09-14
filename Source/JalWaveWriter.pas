@@ -51,7 +51,7 @@ begin
   f_BinaryWriter.Write(a_Format.wBitsPerSample);
   f_BinaryWriter.Write('data'.ToCharArray);
   f_DataSizePosition := f_FileStream.Position; // Store Position
-  f_BinaryWriter.Write(UInt32(0));
+  f_BinaryWriter.Write(UInt32(0));             // Reserve DataSize area
 
   f_DataSize := 0;
 end;

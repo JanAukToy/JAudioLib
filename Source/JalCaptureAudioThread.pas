@@ -18,7 +18,6 @@ type
     f_AudioType: TAudioType;
     f_AudioShareMode: TAudioShareMode;
     f_WaveFormat: tWAVEFORMATEX;
-    f_LowLatencyMode: Boolean;
     f_OnDefaultDeviceChanged: TOnDefaultDeviceChanged;
     f_OnCaptureBuffer: TOnCaptureBuffer;
 
@@ -31,8 +30,7 @@ type
     function StartCapture: Boolean;
   public
     constructor Create(const a_AudioType: TAudioType; const a_AudioShareMode: TAudioShareMode;
-      const a_Format: tWAVEFORMATEX; const a_LowLatencyMode: Boolean = False;
-      const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+      const a_Format: tWAVEFORMATEX; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
     destructor Destroy; override;
 
     property OnCaptureBuffer: TOnCaptureBuffer write f_OnCaptureBuffer;
@@ -46,6 +44,7 @@ const
   REFTIMES_PER_MSEC: REFERENCE_TIME = 10000;    // REFTIMES to MSec
 
   // For LowLatency Mode
+  REFTIME_LOWLATENCY: REFERENCE_TIME    = 50000; // 5ms
   THREAD_INTERVALMS_LOWLATENCY: Integer = 10;
 
 implementation
@@ -56,13 +55,11 @@ uses
 { TAudioStreamClientThread }
 
 constructor TJalCaptureAudioThread.Create(const a_AudioType: TAudioType; const a_AudioShareMode: TAudioShareMode;
-  const a_Format: tWAVEFORMATEX; const a_LowLatencyMode: Boolean = False;
-  const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
+  const a_Format: tWAVEFORMATEX; const a_OnDefaultDeviceChanged: TOnDefaultDeviceChanged = nil);
 begin
   f_AudioType := a_AudioType;
   f_AudioShareMode := a_AudioShareMode;
   f_WaveFormat := a_Format;
-  f_LowLatencyMode := a_LowLatencyMode;
   f_OnDefaultDeviceChanged := a_OnDefaultDeviceChanged;
 
   FreeOnTerminate := False;
@@ -83,6 +80,7 @@ var
   l_StreamFlags: DWORD;
   l_BufferFrameCount: DWORD;
   l_WaveFormatExtensible: WAVEFORMATEXTENSIBLE;
+  l_BufferDuration: REFERENCE_TIME;
   l_Periodicity: REFERENCE_TIME;
 begin
   Result := False;
@@ -95,7 +93,8 @@ begin
     begin
       l_ShareMode := AUDCLNT_SHAREMODE_EXCLUSIVE;
       l_StreamFlags := 0;
-      l_Periodicity := REFTIMES_PER_SEC;
+      l_BufferDuration := REFTIME_LOWLATENCY;
+      l_Periodicity := REFTIME_LOWLATENCY;
     end
     else
     begin
@@ -111,6 +110,7 @@ begin
         l_StreamFlags := 0;
       end;
 
+      l_BufferDuration := REFTIMES_PER_SEC;
       l_Periodicity := 0;
     end;
 
@@ -119,20 +119,13 @@ begin
 
     // Init AudioClient *AUTOCONVERTPCM makes the IsFormatSupported and GetMixFormat function unnecessary.
     if Succeeded(f_AudioClient.Initialize(
-      l_ShareMode, l_StreamFlags, REFTIMES_PER_SEC, l_Periodicity, @l_WaveFormatExtensible, nil)) then
+      l_ShareMode, l_StreamFlags, l_BufferDuration, l_Periodicity, @l_WaveFormatExtensible, nil)) then
     begin
-      if Succeeded(f_AudioClient.GetBufferSize(@l_BufferFrameCount)) then
+      if Succeeded(f_AudioClient.GetBufferSize(l_BufferFrameCount)) then
       begin
-        if f_LowLatencyMode then
-        begin
-          f_ThreadIntervalMs := THREAD_INTERVALMS_LOWLATENCY;
-        end
-        else
-        begin
-          // Get thread sleep time
-          f_ThreadIntervalMs :=
-            Ceil(REFTIMES_PER_SEC * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
-        end;
+        // Get optimal thread interval
+        f_ThreadIntervalMs :=
+          Ceil(l_BufferDuration * l_BufferFrameCount / f_WaveFormat.nSamplesPerSec / REFTIMES_PER_MSEC / 2);
 
         // Get Audio Capture Client
         if Succeeded(f_AudioClient.GetService(IID_IAudioCaptureClient, f_AudioCaptureClient)) then
@@ -176,6 +169,11 @@ begin
       // Wait...
       TThread.Sleep(f_ThreadIntervalMs);
 
+      if Terminated then
+      begin
+        Break;
+      end;
+
       // Get packet size
       if Succeeded(f_AudioCaptureClient.GetNextPacketSize(@l_PacketLength)) then
       begin
@@ -196,11 +194,14 @@ begin
 
             if (l_pBuffer <> nil) and (l_NumFramesAvailable > 0) then
             begin
+              // Get buffer size
               l_IncomingBufferSize := f_WaveFormat.nBlockAlign * l_NumFramesAvailable;
 
               // Callback Capture Buffer
               if Assigned(f_OnCaptureBuffer) then
+              begin
                 f_OnCaptureBuffer(Self, l_pBuffer, l_IncomingBufferSize);
+              end;
             end;
 
             if Succeeded(f_AudioCaptureClient.ReleaseBuffer(l_NumFramesAvailable)) then
