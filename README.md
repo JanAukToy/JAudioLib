@@ -14,6 +14,9 @@ Primarily use Windows WASAPI.
 
 ## Features
 
+* Shared / Exclusive mode.
+  * The exclusive mode only supports limited formats, so please be aware.
+
 * Capture Mic Audio.
 * Capture System Audio.
 * Capture audio save To Wave(Format customizable).
