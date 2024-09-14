@@ -64,7 +64,7 @@ type
     function Initialize(ShareMode: AUDCLNT_SHAREMODE; StreamFlags: DWORD; hnsBufferDuration: REFERENCE_TIME;
       hnsPeriodicity: REFERENCE_TIME; const pFormat: PWAVEFORMATEXTENSIBLE; const AudioSessionGuid: PGUID)
       : HRESULT; stdcall;
-    function GetBufferSize(pNumBufferFrames: PUInt32): HRESULT; stdcall;
+    function GetBufferSize(out pNumBufferFrames: UInt32): HRESULT; stdcall;
     function GetStreamLatency(phnsLatency: PREFERENCE_TIME): HRESULT; stdcall;
     function GetCurrentPadding(pNumPaddingFrames: PUInt32): HRESULT; stdcall;
     function IsFormatSupported(ShareMode: AUDCLNT_SHAREMODE; const pFormat: PWAVEFORMATEX;
